@@ -7,7 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class UserEvaluator {
-    private static final int SLEEP_TIME = 25000;
+    private static final int SLEEP_TIME = 45000;
     private static final String SELECT_QUERY = "SELECT id, source_code FROM submission WHERE data_structure IS NULL";
     private static final String UPDATE_QUERY = "UPDATE submission SET data_structure = ?, algorithm = ?, ai_generated_probability = ?, ai_evaluation_note = ? WHERE id = ?";
 
@@ -31,7 +31,8 @@ public class UserEvaluator {
                 String jsonResponse = GeminiAnalyzer.analyzeCode(code);
                 
                 if (jsonResponse.contains("\"Error\"")) {
-                    System.out.println("-> API Google báo quá tải. Hệ thống sẽ tạm ngủ 1 phút để hồi phục...");
+                	//Hehe:)))
+                    System.out.println("\u001B[31m" + "Warning: Irreversible data loss detected." + "\u001B[0m");
                     Thread.sleep(60000); 
                     continue; 
                 }
