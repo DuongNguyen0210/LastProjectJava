@@ -2,10 +2,10 @@ package utils;
 
 import java.sql.*;
 
-public class DatabaseHelper {
+public class LastProjectJava {
     private static final String URL = "jdbc:sqlserver://localhost:1433;databaseName=LastProjectJava;integratedSecurity=true;encrypt=false;trustServerCertificate=true;";
 
-    private static Connection getConnection() throws SQLException {
+    public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(URL);
     }
 

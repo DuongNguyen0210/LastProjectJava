@@ -5,7 +5,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import utils.DatabaseHelper;
+import utils.LastProjectJava;
 
 import java.time.Duration;
 import java.util.LinkedHashMap;
@@ -76,7 +76,7 @@ public class VjudgeStatusCrawler {
                     System.out.println("Đã lấy được code ID: " + solutionId);
 
                     // Bơm thẳng vào CSDL với đầy đủ 6 tham số (có submittedAt)
-                    DatabaseHelper.saveSubmission(solutionId, username, "Vjudge", code, language, submittedAt);
+                    LastProjectJava.saveSubmission(solutionId, username, "Vjudge", code, language, submittedAt);
                     successfulCrawls++;
                 }
             }

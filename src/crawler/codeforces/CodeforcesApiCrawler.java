@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import utils.DatabaseHelper;
+import utils.LastProjectJava;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -51,7 +51,7 @@ public class CodeforcesApiCrawler {
 
                             if (sourceCode != null && !sourceCode.isEmpty()) {
                                 // Truyền thêm biến submittedAt vào đây
-                                DatabaseHelper.saveSubmission(submitId, handle, "Codeforces", sourceCode, language, submittedAt);
+                                LastProjectJava.saveSubmission(submitId, handle, "Codeforces", sourceCode, language, submittedAt);
                                 successfulCrawls++;
                             }
                         }
