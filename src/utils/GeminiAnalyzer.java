@@ -1,12 +1,24 @@
 package utils;
 
-import okhttp3.*;
-import com.google.gson.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 public class GeminiAnalyzer {
-	private static final String API_KEY = "Nhap_API_Key";
-    private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + API_KEY;
+    private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=";
     private static final int MAX_RETRIES = 3;
 
     private static final OkHttpClient CLIENT = new OkHttpClient.Builder()
@@ -15,6 +27,18 @@ public class GeminiAnalyzer {
             .build();
     private static final Gson GSON = new Gson();
 
+    //Đọc API
+    private static String getApiKey() {
+        Properties prop = new Properties();
+        try (InputStream input = new FileInputStream("config.properties")) {
+            prop.load(input);
+            return prop.getProperty("gemini.api.key");
+        } catch (IOException ex) {
+            System.err.println("Lỗi: Không tìm thấy file config.properties hoặc lỗi đọc file!");
+            return null;
+        }
+    }
+    
     public static String analyzeCode(String sourceCode) {
         int retryCount = 0;
         

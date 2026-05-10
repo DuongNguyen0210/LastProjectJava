@@ -83,3 +83,6 @@ submissions_data.csv
 ### Logs ###
 logs/
 *.log
+
+### Ẩn API ###
+config.properties
