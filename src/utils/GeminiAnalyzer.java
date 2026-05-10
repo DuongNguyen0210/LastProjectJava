@@ -5,7 +5,7 @@ import com.google.gson.*;
 import java.util.concurrent.TimeUnit;
 
 public class GeminiAnalyzer {
-	private static final String API_KEY = "KEY_API_AI";
+	private static final String API_KEY = "Nhap_API_Key";
     private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + API_KEY;
     private static final int MAX_RETRIES = 3;
 
