@@ -13,6 +13,12 @@ GO
 USE LastProjectJava;
 GO
 
+-- Drop existing tables to start fresh (if needed)
+DROP TABLE IF EXISTS dbo.ai_analysis;
+DROP TABLE IF EXISTS dbo.submission;
+DROP TABLE IF EXISTS dbo.target_account;
+GO
+
 -- Create target_account table
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'target_account')
 BEGIN
@@ -25,7 +31,7 @@ BEGIN
 END
 GO
 
--- Create submission table (Đã tích hợp đầy đủ các cột cho AI)
+-- Create submission table (Chỉ chứa thông tin bài nộp gốc)
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'submission')
 BEGIN
     CREATE TABLE submission (
@@ -36,13 +42,23 @@ BEGIN
         source_code NVARCHAR(MAX) NOT NULL,
         submitted_at DATETIME2 NOT NULL,
         
-        -- Các cột phục vụ phân tích AI (Yêu cầu 1 & 2)
+        FOREIGN KEY (account_id) REFERENCES target_account(id)
+    );
+END
+GO
+
+-- Create ai_analysis table (Bảng mới lưu trữ kết quả phân tích AI)
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ai_analysis')
+BEGIN
+    CREATE TABLE ai_analysis (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        submission_id INT NOT NULL UNIQUE,
         data_structure NVARCHAR(MAX),
         algorithm NVARCHAR(MAX),
         ai_generated_probability FLOAT DEFAULT 0,
         ai_evaluation_note NVARCHAR(MAX),
         
-        FOREIGN KEY (account_id) REFERENCES target_account(id)
+        FOREIGN KEY (submission_id) REFERENCES submission(id) ON DELETE CASCADE
     );
 END
 GO
@@ -56,6 +72,9 @@ IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_submission_submitted_
 
 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_target_account_platform')
     CREATE INDEX idx_target_account_platform ON target_account(platform);
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_ai_analysis_submission_id')
+    CREATE INDEX idx_ai_analysis_submission_id ON ai_analysis(submission_id);
 GO
 
 -- Cập nhật VIEW để hiển thị đầy đủ thông tin phân tích
@@ -72,18 +91,18 @@ SELECT
     s.language,
     s.source_code,
     s.submitted_at,
-    s.data_structure,
-    s.algorithm,
-    s.ai_generated_probability,
-    s.ai_evaluation_note
+    ai.data_structure,
+    ai.algorithm,
+    ai.ai_generated_probability,
+    ai.ai_evaluation_note
 FROM submission s
-JOIN target_account ta ON s.account_id = ta.id;
+JOIN target_account ta ON s.account_id = ta.id
+LEFT JOIN ai_analysis ai ON s.id = ai.submission_id;
 GO
 
 -- Giữ lại các Note thông báo cũ của nhóm
 PRINT 'Database setup completed successfully!';
 PRINT 'Database: LastProjectJava';
-PRINT 'Tables created: target_account, submission';
+PRINT 'Tables created: target_account, submission, ai_analysis';
 PRINT 'Indexes created for optimal performance';
 PRINT 'View created: v_submissions_with_accounts';
-PRINT 'AI Analysis columns integrated: data_structure, algorithm, ai_generated_probability, ai_evaluation_note';

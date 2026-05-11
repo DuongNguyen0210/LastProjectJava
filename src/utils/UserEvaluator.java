@@ -8,8 +8,18 @@ import com.google.gson.JsonParser;
 
 public class UserEvaluator {
     private static final int SLEEP_TIME = 25000;
-    private static final String SELECT_QUERY = "SELECT id, source_code FROM submission WHERE data_structure IS NULL";
-    private static final String UPDATE_QUERY = "UPDATE submission SET data_structure = ?, algorithm = ?, ai_generated_probability = ?, ai_evaluation_note = ? WHERE id = ?";
+    
+    // Tìm các bài nộp (id, code) MÀ CHƯA CÓ trong bảng ai_analysis
+    private static final String SELECT_QUERY = 
+        "SELECT s.id, s.source_code " +
+        "FROM submission s " +
+        "LEFT JOIN ai_analysis a ON s.id = a.submission_id " +
+        "WHERE a.id IS NULL";
+        
+    // Chèn dữ liệu mới vào bảng ai_analysis thay vì update bảng submission
+    private static final String INSERT_QUERY = 
+        "INSERT INTO ai_analysis (submission_id, data_structure, algorithm, ai_generated_probability, ai_evaluation_note) " +
+        "VALUES (?, ?, ?, ?, ?)";
 
     public static void evaluateUnanalyzedSubmissions() {
         System.out.println("===> Bắt đầu quét các bài nộp chưa phân tích...");
@@ -18,7 +28,7 @@ public class UserEvaluator {
         try (Connection conn = LastProjectJava.getConnection();
              PreparedStatement selectStmt = conn.prepareStatement(SELECT_QUERY);
              ResultSet rs = selectStmt.executeQuery();
-             PreparedStatement updateStmt = conn.prepareStatement(UPDATE_QUERY)) {
+             PreparedStatement insertStmt = conn.prepareStatement(INSERT_QUERY)) {
 
             while (rs.next()) {
                 int id = rs.getInt("id");
@@ -36,7 +46,7 @@ public class UserEvaluator {
                     continue; 
                 }
                 
-                if (saveResultToDb(updateStmt, id, jsonResponse)) {
+                if (saveResultToDb(insertStmt, id, jsonResponse)) {
                     processedCount++;
                     System.out.println("Done ID: " + id);
                     Thread.sleep(SLEEP_TIME);
@@ -49,18 +59,18 @@ public class UserEvaluator {
         }
     }
 
-    private static boolean saveResultToDb(PreparedStatement pstmt, int id, String jsonStr) {
+    private static boolean saveResultToDb(PreparedStatement pstmt, int submissionId, String jsonStr) {
         try {
             JsonObject obj = JsonParser.parseString(jsonStr).getAsJsonObject();
-            pstmt.setString(1, getString(obj, "data_structure"));
-            pstmt.setString(2, getString(obj, "algorithm"));
-            pstmt.setDouble(3, obj.has("ai_generated_probability") ? obj.get("ai_generated_probability").getAsDouble() : 0.0);
-            pstmt.setString(4, getString(obj, "note"));
-            pstmt.setInt(5, id);
+            pstmt.setInt(1, submissionId);
+            pstmt.setString(2, getString(obj, "data_structure"));
+            pstmt.setString(3, getString(obj, "algorithm"));
+            pstmt.setDouble(4, obj.has("ai_generated_probability") ? obj.get("ai_generated_probability").getAsDouble() : 0.0);
+            pstmt.setString(5, getString(obj, "note"));
             
             return pstmt.executeUpdate() > 0;
         } catch (Exception e) {
-            System.out.println("-> Bỏ qua ID " + id + " do lỗi dữ liệu AI.");
+            System.out.println("-> Bỏ qua ID " + submissionId + " do lỗi dữ liệu AI.");
             return false;
         }
     }
