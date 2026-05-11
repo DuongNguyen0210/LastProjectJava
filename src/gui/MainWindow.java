@@ -27,7 +27,7 @@ public class MainWindow extends JFrame {
 	}
 
 	private void initializeFrame() {
-		setTitle("🤖 Code Analysis System - Codeforces & Vjudge");
+		setTitle("Code Analysis System - Codeforces & Vjudge");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setSize(1200, 700);
 		setLocationRelativeTo(null);
@@ -36,37 +36,33 @@ public class MainWindow extends JFrame {
 	}
 
 	private void initializeComponents() {
-		// Main panel
 		JPanel mainPanel = new JPanel(new BorderLayout(5, 5));
 		mainPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-		// Header
 		mainPanel.add(createHeaderPanel(), BorderLayout.NORTH);
 
-		// Tabbed pane
 		tabbedPane = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
 		tabbedPane.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
-		// Add tabs
-		tabbedPane.addTab("🏠 Home", null, createHomeTab(), "Dashboard & Statistics");
-		tabbedPane.addTab("🕷️  Crawler", null, createCrawlerTab(), "Setup & Run Crawler");
-		tabbedPane.addTab("📊 Results", null, createResultsTab(), "View Analysis Results");
-		tabbedPane.addTab("⭐ Evaluation", null, createEvaluationTab(), "User Evaluation Reports");
+		tabbedPane.addTab("Trang Chủ", null, createHomeTab(), "Bảng Điều Khiển");
+		tabbedPane.addTab("Cào Mã", null, createCrawlerTab(), "Cào Mã Nguồn");
+		tabbedPane.addTab("Kết Quả", null, createResultsTab(), "Kết Quả Phân Tích");
+		tabbedPane.addTab("Phân Tích AI", null, createAIAnalysisTab(), "Phân Tích Mã Bằng AI");
+		tabbedPane.addTab("Đánh Giá", null, createEvaluationTab(), "Đánh Giá Người Dùng");
 
 		mainPanel.add(tabbedPane, BorderLayout.CENTER);
 
-		// Footer (Status bar)
-		mainPanel.add(createStatusBar(), BorderLayout.SOUTH);
+		// mainPanel.add(createStatusBar(), BorderLayout.SOUTH);
 
 		add(mainPanel);
 	}
 
 	private JPanel createHeaderPanel() {
 		JPanel panel = new JPanel(new BorderLayout());
-		panel.setBackground(new Color(25, 118, 210)); // Material blue
+		panel.setBackground(new Color(25, 118, 210));
 		panel.setPreferredSize(new Dimension(0, 60));
 
-		JLabel titleLabel = new JLabel("🤖 Code Analysis System");
+		JLabel titleLabel = new JLabel("Code Analysis System");
 		titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
 		titleLabel.setForeground(Color.WHITE);
 		titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 10));
@@ -82,7 +78,7 @@ public class MainWindow extends JFrame {
 
 		statusLabel = new JLabel("Ready");
 		statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-		statusLabel.setForeground(new Color(0, 128, 0)); // Green
+		statusLabel.setForeground(new Color(0, 128, 0));
 
 		progressBar = new JProgressBar(0, 100);
 		progressBar.setPreferredSize(new Dimension(200, 25));
@@ -95,8 +91,6 @@ public class MainWindow extends JFrame {
 
 		return panel;
 	}
-
-	// ========== TAB CONTENTS ==========
 
 	private JPanel createHomeTab() {
 		return new HomeTab().getPanel();
@@ -114,10 +108,11 @@ public class MainWindow extends JFrame {
 		return new EvaluationTab().getPanel();
 	}
 
-	// ========== UTILITIES ==========
+	private JPanel createAIAnalysisTab() {
+		return new AIAnalysisTab().getPanel();
+	}
 
 	private Image createImageIcon() {
-		// Return null hoặc tự tạo icon 16x16
 		return null;
 	}
 
@@ -130,7 +125,7 @@ public class MainWindow extends JFrame {
 
 	public void setError(String message) {
 		SwingUtilities.invokeLater(() -> {
-			statusLabel.setText("❌ " + message);
+			statusLabel.setText("Error: " + message);
 			statusLabel.setForeground(Color.RED);
 		});
 	}

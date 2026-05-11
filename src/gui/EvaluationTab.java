@@ -4,10 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -16,13 +14,23 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
 import javax.swing.JTextArea;
+import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableModel;
+
+import utils.ProfileEvaluator;
 
 public class EvaluationTab {
 	private JPanel panel;
 	private JTextArea reportArea;
+	private JTable statsTable;
+	private DefaultTableModel tableModel;
+	private JComboBox<String> userCombo;
 
 	public EvaluationTab() {
 		createUI();
@@ -30,56 +38,109 @@ public class EvaluationTab {
 
 	private void createUI() {
 		panel = new JPanel(new BorderLayout(10, 10));
-		panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+		panel.setBackground(UIUtils.LIGHT_GRAY);
 
-		// Title
-		JLabel titleLabel = new JLabel("⭐ User Evaluation Reports");
-		titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-		panel.add(titleLabel, BorderLayout.NORTH);
+		JPanel topPanel = new JPanel(new BorderLayout());
+		topPanel.setBackground(UIUtils.LIGHT_GRAY);
 
-		// Top panel - User selection
-		JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-		topPanel.setBackground(new Color(240, 240, 240));
+		JLabel titleLabel = new JLabel("Đánh Giá Người Dùng");
+		titleLabel.setFont(UIUtils.FONT_TITLE);
+		titleLabel.setForeground(UIUtils.PRIMARY_COLOR);
 
-		JLabel userLabel = new JLabel("Select User:");
-		userLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		JPanel userSelectPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+		userSelectPanel.setBackground(UIUtils.LIGHT_GRAY);
 
-		JComboBox<String> userCombo = new JComboBox<>();
-		userCombo.setPreferredSize(new Dimension(200, 30));
+		JLabel userLabel = new JLabel("Chọn Người Dùng:");
+		userLabel.setFont(UIUtils.FONT_NORMAL);
+
+		userCombo = new JComboBox<>();
+		userCombo.setFont(UIUtils.FONT_NORMAL);
+		userCombo.setPreferredSize(new Dimension(180, 30));
 		loadUsers(userCombo);
 
-		JButton generateBtn = new JButton("📊 Generate Report");
-		generateBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
-		generateBtn.setPreferredSize(new Dimension(150, 30));
-		generateBtn.setBackground(new Color(33, 150, 243));
-		generateBtn.setForeground(Color.WHITE);
-		generateBtn.addActionListener(e -> {
-			String selectedUser = (String) userCombo.getSelectedItem();
-			if (selectedUser != null) {
-				generateReport(selectedUser);
-			}
+		JButton reportBtn = UIHelper.createButton("Tạo Báo Cáo", UIUtils.SUCCESS_COLOR);
+		reportBtn.setFocusPainted(false);
+		reportBtn.setContentAreaFilled(true);
+		reportBtn.setOpaque(true);
+		reportBtn.addActionListener(e -> {
+			String user = (String) userCombo.getSelectedItem();
+			if (user != null)
+				generateReport(user);
 		});
 
-		topPanel.add(userLabel);
-		topPanel.add(userCombo);
-		topPanel.add(generateBtn);
+		JButton exportBtn = UIHelper.createButton("Xuất Báo Cáo", UIUtils.PRIMARY_COLOR);
+		exportBtn.setFocusPainted(false);
+		exportBtn.setContentAreaFilled(true);
+		exportBtn.setOpaque(true);
+		exportBtn.addActionListener(e -> {
+			String user = (String) userCombo.getSelectedItem();
+			if (user != null)
+				exportReport(user);
+		});
 
+		userSelectPanel.add(userLabel);
+		userSelectPanel.add(userCombo);
+		userSelectPanel.add(reportBtn);
+		userSelectPanel.add(exportBtn);
+
+		topPanel.add(titleLabel, BorderLayout.WEST);
+		topPanel.add(userSelectPanel, BorderLayout.EAST);
 		panel.add(topPanel, BorderLayout.NORTH);
 
-		// Report area
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+		splitPane.setResizeWeight(0.4);
+		splitPane.setLeftComponent(createStatsPanel());
+		splitPane.setRightComponent(createReportPanel());
+		panel.add(splitPane, BorderLayout.CENTER);
+	}
+
+	private JPanel createStatsPanel() {
+		JPanel statsPanel = new JPanel(new BorderLayout());
+		statsPanel.setBackground(Color.WHITE);
+		statsPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(UIUtils.PRIMARY_COLOR, 2),
+				"Thống Kê", TitledBorder.LEFT, TitledBorder.TOP, UIUtils.FONT_HEADER));
+
+		String[] columns = { "Chỉ Số", "Giá Trị" };
+		tableModel = new DefaultTableModel(columns, 0) {
+			@Override
+			public boolean isCellEditable(int row, int column) {
+				return false;
+			}
+		};
+
+		statsTable = new JTable(tableModel);
+		statsTable.setFont(UIUtils.FONT_NORMAL);
+		statsTable.setRowHeight(25);
+		statsTable.getTableHeader().setFont(UIUtils.FONT_NORMAL);
+		statsTable.setBackground(Color.WHITE);
+
+		JScrollPane scrollPane = new JScrollPane(statsTable);
+		statsPanel.add(scrollPane, BorderLayout.CENTER);
+
+		return statsPanel;
+	}
+
+	private JPanel createReportPanel() {
+		JPanel reportPanel = new JPanel(new BorderLayout());
+		reportPanel.setBackground(Color.WHITE);
+		reportPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(UIUtils.PRIMARY_COLOR, 2),
+				"Báo Cáo Chi Tiết", TitledBorder.LEFT, TitledBorder.TOP, UIUtils.FONT_HEADER));
+
 		reportArea = new JTextArea();
-		reportArea.setFont(new Font("Courier New", Font.PLAIN, 11));
+		reportArea.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 11));
 		reportArea.setEditable(false);
-		reportArea.setBackground(new Color(250, 250, 250));
+		reportArea.setBackground(new java.awt.Color(250, 250, 250));
 		reportArea.setLineWrap(true);
 		reportArea.setWrapStyleWord(true);
-		reportArea.setText("Select a user and click 'Generate Report' to view their evaluation.\n\n"
-				+ "The report will include:\n" + "- Total submissions analyzed\n" + "- Data structures usage\n"
-				+ "- Algorithm usage\n" + "- AI usage detection score\n" + "- Overall evaluation level");
+		reportArea.setText("Chọn người dùng và nhấp vào 'Tạo Báo Cáo' để xem đánh giá chi tiết.\n\n"
+				+ "Báo cáo bao gồm:\n" + "• Tổng bài nộp đã phân tích\n" + "• Tỷ lệ sử dụng AI\n"
+				+ "• Mức độ sử dụng AI\n" + "• Thuật toán nổi bật\n" + "• Xếp hạng kỹ năng tổng thể");
 
 		JScrollPane scrollPane = new JScrollPane(reportArea);
-		scrollPane.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-		panel.add(scrollPane, BorderLayout.CENTER);
+		reportPanel.add(scrollPane, BorderLayout.CENTER);
+
+		return reportPanel;
 	}
 
 	private void loadUsers(JComboBox<String> combo) {
@@ -94,81 +155,118 @@ public class EvaluationTab {
 			}
 
 		} catch (SQLException e) {
-			System.err.println("Error: " + e.getMessage());
+			System.err.println("Error loading users: " + e.getMessage());
 		}
 	}
 
 	private void generateReport(String username) {
-		String sql = "SELECT " + "COUNT(*) as total_submissions, "
-				+ "AVG(CAST(ai_generated_probability AS FLOAT)) as avg_ai, "
-				+ "COUNT(DISTINCT data_structure) as unique_dsa, " + "COUNT(DISTINCT algorithm) as unique_algo "
-				+ "FROM submission s " + "JOIN target_account t ON s.account_id = t.id " + "WHERE t.username = ?";
+		tableModel.setRowCount(0);
 
-		try (Connection conn = getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+		try {
+			// Gọi ProfileEvaluator để lấy dữ liệu
+			String profileReport = ProfileEvaluator.generateUserReport(username);
 
-			pstmt.setString(1, username);
-			ResultSet rs = pstmt.executeQuery();
+			// Lấy thống kê chi tiết
+			ProfileEvaluator.UserStats stats = ProfileEvaluator.fetchUserStats(username);
 
-			if (rs.next()) {
-				int totalSubs = rs.getInt("total_submissions");
-				double avgAi = rs.getDouble("avg_ai");
-				int uniqueDsa = rs.getInt("unique_dsa");
-				int uniqueAlgo = rs.getInt("unique_algo");
+			// Populate Stats Table
+			tableModel.addRow(new Object[] { "Tổng Bài Nộp", stats.totalSubmissions });
+			tableModel.addRow(new Object[] { "Đã Phân Tích", stats.analyzedCount });
+			tableModel.addRow(new Object[] { "Chờ Xử Lý", stats.totalSubmissions - stats.analyzedCount });
+			tableModel.addRow(new Object[] { "Tỷ Lệ Phân Tích", String.format("%.1f%%",
+					stats.totalSubmissions > 0 ? (stats.analyzedCount * 100.0 / stats.totalSubmissions) : 0) });
+			tableModel.addRow(new Object[] { "Tỷ Lệ AI Trung Bình", String.format("%.1f%%", stats.avgAi) });
 
-				StringBuilder report = new StringBuilder();
-				report.append("╔════════════════════════════════════════════════════╗\n");
-				report.append("║           USER EVALUATION REPORT                   ║\n");
-				report.append("╠════════════════════════════════════════════════════╣\n");
-				report.append("║ Username: ").append(String.format("%-39s", username)).append("║\n");
-				report.append("╚════════════════════════════════════════════════════╝\n\n");
+			// Build detailed report
+			StringBuilder report = new StringBuilder();
+			report.append("═════════════════════════════════════════════════════\n");
+			report.append("BÁO CÁO ĐÁNH GIÁ NGƯỜI DÙNG\n");
+			report.append("═════════════════════════════════════════════════════\n\n");
+			report.append("Tên Người Dùng: ").append(username).append("\n\n");
 
-				report.append("📊 STATISTICS:\n");
-				report.append("─────────────────────────────────────────────────────\n");
-				report.append(String.format("  Total Submissions:        %d\n", totalSubs));
-				report.append(String.format("  Unique Data Structures:   %d\n", uniqueDsa));
-				report.append(String.format("  Unique Algorithms:        %d\n", uniqueAlgo));
-				report.append(String.format("  Average AI Score:         %.1f%%\n\n", avgAi));
+			report.append("KẾT QUẢ PHÂN TÍCH:\n");
+			report.append("─────────────────────────────────────────────────────\n");
+			report.append(String.format("Tổng Bài Nộp:          %d\n", stats.totalSubmissions));
+			report.append(String.format("Đã Phân Tích:          %d\n", stats.analyzedCount));
+			report.append(String.format("Chờ Xử Lý:             %d\n\n", stats.totalSubmissions - stats.analyzedCount));
 
-				report.append("🤖 AI USAGE EVALUATION:\n");
-				report.append("─────────────────────────────────────────────────────\n");
-				if (avgAi > 70) {
-					report.append("  Level: ⚠️⚠️⚠️ VERY HIGH - Likely using AI heavily\n");
-				} else if (avgAi > 50) {
-					report.append("  Level: ⚠️⚠️ HIGH - Noticeable AI usage\n");
-				} else if (avgAi > 30) {
-					report.append("  Level: ⚠️ MEDIUM - Some AI assistance detected\n");
-				} else {
-					report.append("  Level: ✅ LOW - Mostly self-written code\n");
-				}
+			report.append("PHÁT HIỆN AI:\n");
+			report.append("─────────────────────────────────────────────────────\n");
+			report.append(String.format("Tỷ Lệ AI Trung Bình:   %.1f%%\n", stats.avgAi));
 
-				report.append("\n⭐ OVERALL EVALUATION:\n");
-				report.append("─────────────────────────────────────────────────────\n");
-				double skillScore = (uniqueDsa * 5) + (uniqueAlgo * 3) + (100 - avgAi) / 2.0;
-				skillScore = Math.min(100, skillScore);
-
-				if (skillScore >= 80) {
-					report.append("  Rating: ⭐⭐⭐ EXCELLENT\n");
-				} else if (skillScore >= 65) {
-					report.append("  Rating: ⭐⭐ GOOD\n");
-				} else if (skillScore >= 50) {
-					report.append("  Rating: ⭐ AVERAGE\n");
-				} else {
-					report.append("  Rating: ⚠️ BELOW AVERAGE\n");
-				}
-
-				report.append("\n═════════════════════════════════════════════════════\n");
-
-				reportArea.setText(report.toString());
+			if (stats.avgAi > 70) {
+				report.append("Mức Độ Sử Dụng:        LẠM DỤNG CAO\n");
+			} else if (stats.avgAi > 30) {
+				report.append("Mức Độ Sử Dụng:        CÓ THAM KHẢO AI\n");
+			} else {
+				report.append("Mức Độ Sử Dụng:        TỰ LỰC TỐT\n");
 			}
 
-		} catch (SQLException e) {
-			reportArea.setText("Error: " + e.getMessage());
+			report.append("\nTHUẬT TOÁN NỔI BẬT:\n");
+			report.append("─────────────────────────────────────────────────────\n");
+			for (String algo : stats.topAlgorithms) {
+				report.append("• ").append(algo).append("\n");
+			}
+
+			report.append("\nXẾP HẠNG TỔNG THỂ:\n");
+			report.append("─────────────────────────────────────────────────────\n");
+			double skillScore = calculateSkillScore(stats);
+			report.append(String.format("Điểm Kỹ Năng:          %.1f/100\n", skillScore));
+
+			if (skillScore >= 80) {
+				report.append("Xếp Hạng:              XUẤT SẮC\n");
+			} else if (skillScore >= 65) {
+				report.append("Xếp Hạng:              TỐT\n");
+			} else if (skillScore >= 50) {
+				report.append("Xếp Hạng:              TRUNG BÌNH\n");
+			} else {
+				report.append("Xếp Hạng:              DƯỚI TRUNG BÌNH\n");
+			}
+
+			report.append("\n═════════════════════════════════════════════════════\n");
+
+			reportArea.setText(report.toString());
+
+		} catch (Exception e) {
+			reportArea.setText("Lỗi: " + e.getMessage());
+		}
+	}
+
+	private double calculateSkillScore(ProfileEvaluator.UserStats stats) {
+		int algoCount = stats.topAlgorithms.size();
+		double skillScore = (algoCount * 5) + (100 - stats.avgAi) / 2.0;
+		return Math.min(100, skillScore);
+	}
+
+	private void exportReport(String username) {
+		try {
+			String report = ProfileEvaluator.generateUserReport(username);
+
+			javax.swing.JFileChooser fileChooser = new javax.swing.JFileChooser();
+			fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Text Files", "txt"));
+
+			if (fileChooser.showSaveDialog(panel) == javax.swing.JFileChooser.APPROVE_OPTION) {
+				java.io.File file = fileChooser.getSelectedFile();
+				if (!file.getName().endsWith(".txt")) {
+					file = new java.io.File(file.getAbsolutePath() + ".txt");
+				}
+
+				try (java.io.FileWriter fw = new java.io.FileWriter(file, java.nio.charset.StandardCharsets.UTF_8)) {
+					fw.write(reportArea.getText());
+					JOptionPane.showMessageDialog(panel, "Đã xuất báo cáo tới: " + file.getAbsolutePath(), "Thành Công",
+							JOptionPane.INFORMATION_MESSAGE);
+				}
+			}
+
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(panel, "Lỗi: " + e.getMessage(), "Lỗi Xuất", JOptionPane.ERROR_MESSAGE);
 		}
 	}
 
 	private Connection getConnection() throws SQLException {
-		return DriverManager.getConnection(
-				"jdbc:sqlserver://localhost:1433;databaseName=LastProjectJava;integratedSecurity=true;encrypt=false;trustServerCertificate=true;");
+		return DriverManager.getConnection("jdbc:sqlserver://localhost:1433;databaseName=LastProjectJava;"
+				+ "integratedSecurity=true;encrypt=false;trustServerCertificate=true;"
+				+ "characterEncoding=UTF-8;useUnicode=true;");
 	}
 
 	public JPanel getPanel() {

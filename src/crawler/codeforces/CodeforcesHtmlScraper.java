@@ -2,7 +2,6 @@ package crawler.codeforces;
 
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.Scanner;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -15,7 +14,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 public class CodeforcesHtmlScraper {
 
 	private static WebDriver driver;
-
 	private static final String DRIVER_PATH = "msedgedriver.exe";
 	private static final String BASE_URL = "https://codeforces.com";
 	private static final int TIMEOUT_SECONDS = 15;
@@ -35,7 +33,6 @@ public class CodeforcesHtmlScraper {
 			options.addArguments("--no-sandbox");
 			options.addArguments("--disable-dev-shm-usage");
 			options.addArguments("--remote-debugging-port=9222");
-
 			options.addArguments("--disable-notifications");
 			options.setExperimentalOption("excludeSwitches", new String[] { "enable-automation" });
 			options.setExperimentalOption("useAutomationExtension", false);
@@ -44,17 +41,14 @@ public class CodeforcesHtmlScraper {
 			driver.manage().window().maximize();
 			driver.get(BASE_URL);
 
-			printLoginInstructions();
-			waitForUserConfirmation();
-
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
+			System.err.println("Error: " + e.getMessage());
 		}
 	}
 
 	public static String getSourceCode(String contestId, String submitId) {
 		if (driver == null) {
-			System.out.println("   [Scraper] Trình duyệt chưa được mở!");
+			System.out.println("Browser not opened!");
 			return null;
 		}
 
@@ -64,40 +58,27 @@ public class CodeforcesHtmlScraper {
 			long delay = 2000 + (long) (Math.random() * 2000);
 			Thread.sleep(delay);
 
-			System.out.println("đang chuyển hướng đến: " + url);
 			driver.get(url);
 
 			WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(TIMEOUT_SECONDS));
 			WebElement codeElement = wait.until(ExpectedConditions.presenceOfElementLocated(By.id(CODE_ELEMENT_ID)));
 
-			System.out.println("Accepted!");
 			return codeElement.getText();
 
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
+			System.err.println("Error: " + e.getMessage());
 			return null;
 		}
 	}
 
 	public static void quitDriver() {
 		if (driver != null) {
-			System.out.println("Success");
 			driver.quit();
 			driver = null;
 		}
 	}
 
-	private static void printLoginInstructions() {
-		System.out.println(
-				"Trình duyệt mở lên và chuyển hướng tới trang đăng nhập codeforces, bạn đăng nhập tài khoản vào nếu đăng nhập xong thì gõ 'OK' rồi nhấn Enter!");
-	}
-
-	private static void waitForUserConfirmation() {
-		Scanner scanner = new Scanner(System.in);
-		while (true) {
-			String input = scanner.nextLine().trim();
-			if ("OK".equalsIgnoreCase(input))
-				break;
-		}
+	public static WebDriver getDriver() {
+		return driver;
 	}
 }

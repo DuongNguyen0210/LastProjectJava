@@ -2,16 +2,18 @@ package gui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridLayout;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -36,7 +38,9 @@ public class CrawlerTab {
 	private JProgressBar progressBar;
 	private JButton startBtn;
 	private JButton stopBtn;
-	private JCheckBox autoLoginCheckbox;
+	private JComboBox<String> platformCombo;
+	private JSpinner daysSpinner;
+	private JTextArea usernamesArea;
 	private volatile boolean isCrawling = false;
 
 	public CrawlerTab() {
@@ -44,27 +48,19 @@ public class CrawlerTab {
 	}
 
 	private void createUI() {
-		panel = new JPanel(new BorderLayout(10, 10));
+		panel = new JPanel(new BorderLayout(15, 15));
 		panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 		panel.setBackground(UIUtils.LIGHT_GRAY);
 
-		// Title
-		JLabel titleLabel = new JLabel("🕷️  Crawler Configuration");
+		JLabel titleLabel = new JLabel("Cào Mã Nguồn");
 		titleLabel.setFont(UIUtils.FONT_TITLE);
 		titleLabel.setForeground(UIUtils.PRIMARY_COLOR);
 		panel.add(titleLabel, BorderLayout.NORTH);
 
-		// Main content split panel
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-		splitPane.setDividerLocation(400);
-		splitPane.setResizeWeight(0.4);
-
-		// Left panel - Configuration
+		splitPane.setResizeWeight(0.35);
 		splitPane.setLeftComponent(createConfigPanel());
-
-		// Right panel - Logs
 		splitPane.setRightComponent(createLogsPanel());
-
 		panel.add(splitPane, BorderLayout.CENTER);
 	}
 
@@ -73,69 +69,63 @@ public class CrawlerTab {
 		configPanel.setLayout(new BoxLayout(configPanel, BoxLayout.Y_AXIS));
 		configPanel.setBackground(Color.WHITE);
 		configPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(UIUtils.PRIMARY_COLOR, 2),
-				"⚙️  Settings", TitledBorder.LEFT, TitledBorder.TOP, UIUtils.FONT_HEADER));
+				"Cấu Hình", TitledBorder.LEFT, TitledBorder.TOP, UIUtils.FONT_HEADER));
+		configPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-		// 1. Platform Selection
-		JPanel platformPanel = createLabeledPanel("Platform:");
+		JPanel platformPanel = createConfigRow("Nền Tảng:", 100);
 		String[] platforms = { "Codeforces", "Vjudge" };
-		JComboBox<String> platformCombo = new JComboBox<>(platforms);
-		platformCombo.setPreferredSize(new Dimension(200, 30));
+		platformCombo = new JComboBox<>(platforms);
+		platformCombo.setFont(UIUtils.FONT_NORMAL);
+		platformCombo.setPreferredSize(new Dimension(150, 30));
 		platformPanel.add(platformCombo);
 		configPanel.add(platformPanel);
-		configPanel.add(Box.createVerticalStrut(10));
+		configPanel.add(Box.createVerticalStrut(12));
 
-		// 2. Days Limit
-		JPanel daysPanel = createLabeledPanel("Days Limit:");
-		JSpinner daysSpinner = new JSpinner(new SpinnerNumberModel(7, 1, 365, 1));
-		((JSpinner.DefaultEditor) daysSpinner.getEditor()).getTextField().setFont(UIUtils.FONT_NORMAL);
-		((JSpinner.DefaultEditor) daysSpinner.getEditor()).getTextField().setPreferredSize(new Dimension(80, 30));
+		JPanel daysPanel = createConfigRow("Số Ngày:", 100);
+		daysSpinner = new JSpinner(new SpinnerNumberModel(7, 1, 365, 1));
+		daysSpinner.setFont(UIUtils.FONT_NORMAL);
+		daysSpinner.setPreferredSize(new Dimension(80, 30));
 		daysPanel.add(daysSpinner);
 		configPanel.add(daysPanel);
-		configPanel.add(Box.createVerticalStrut(10));
+		configPanel.add(Box.createVerticalStrut(12));
 
-		// 3. Usernames Input
-		JLabel usernamesLabel = new JLabel("Usernames (một dòng một nick):");
+		JLabel usernamesLabel = new JLabel("Tên Người Dùng (một dòng một nick):");
 		usernamesLabel.setFont(UIUtils.FONT_NORMAL);
 		configPanel.add(usernamesLabel);
 
-		JTextArea usernamesArea = new JTextArea(6, 20);
-		usernamesArea.setFont(UIUtils.FONT_SMALL);
+		usernamesArea = new JTextArea(6, 20);
+		usernamesArea.setFont(new Font("Courier New", Font.PLAIN, 11));
 		usernamesArea.setLineWrap(true);
 		usernamesArea.setWrapStyleWord(true);
-		usernamesArea.setText("tourist\necnerwala\njiangly\ncolorful");
+		usernamesArea.setText("tourist\necnerwala\njiangly");
 		usernamesArea.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
 
 		JScrollPane scrollPane = new JScrollPane(usernamesArea);
 		configPanel.add(scrollPane);
-		configPanel.add(Box.createVerticalStrut(15));
+		configPanel.add(Box.createVerticalStrut(20));
 
-		// 4. Auto Login Checkbox
-		autoLoginCheckbox = new JCheckBox("Auto-login (sử dụng saved session)", true);
-		autoLoginCheckbox.setFont(UIUtils.FONT_SMALL);
-		configPanel.add(autoLoginCheckbox);
-		configPanel.add(Box.createVerticalStrut(15));
-
-		// 5. Action Buttons
-		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+		JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 10, 0));
 		buttonPanel.setBackground(Color.WHITE);
 
-		startBtn = UIUtils.createButton("▶️  Start Crawling", UIUtils.SUCCESS_COLOR);
-		startBtn.setPreferredSize(new Dimension(160, 40));
-		startBtn.setFont(UIUtils.FONT_HEADER);
-		startBtn.addActionListener(e -> startCrawling((String) platformCombo.getSelectedItem(),
-				(Integer) daysSpinner.getValue(), usernamesArea.getText(), autoLoginCheckbox.isSelected()));
+		startBtn = UIHelper.createHeaderButton("Bắt Đầu Cào", UIUtils.SUCCESS_COLOR);
+		startBtn.setFocusPainted(false);
+		startBtn.setContentAreaFilled(true);
+		startBtn.setOpaque(true);
+		startBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		startBtn.addActionListener(e -> startCrawling());
 
-		stopBtn = UIUtils.createButton("⏹️  Stop", UIUtils.ERROR_COLOR);
-		stopBtn.setPreferredSize(new Dimension(120, 40));
-		stopBtn.setFont(UIUtils.FONT_HEADER);
+		stopBtn = UIHelper.createHeaderButton("Dừng", UIUtils.ERROR_COLOR);
 		stopBtn.setEnabled(false);
+		stopBtn.setFocusPainted(false);
+		stopBtn.setContentAreaFilled(true);
+		stopBtn.setOpaque(true);
+		stopBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 		stopBtn.addActionListener(e -> stopCrawling());
 
 		buttonPanel.add(startBtn);
 		buttonPanel.add(stopBtn);
 		configPanel.add(buttonPanel);
 
-		// Add stretch space
 		configPanel.add(Box.createVerticalGlue());
 
 		JPanel wrapper = new JPanel(new BorderLayout());
@@ -143,49 +133,59 @@ public class CrawlerTab {
 		return wrapper;
 	}
 
+	private JPanel createConfigRow(String label, int labelWidth) {
+		JPanel pnl = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+		pnl.setBackground(Color.WHITE);
+		JLabel lbl = new JLabel(label);
+		lbl.setFont(UIUtils.FONT_NORMAL);
+		lbl.setPreferredSize(new Dimension(labelWidth, 30));
+		pnl.add(lbl);
+		return pnl;
+	}
+
 	private JPanel createLogsPanel() {
 		JPanel logsPanel = new JPanel(new BorderLayout(0, 10));
 		logsPanel.setBackground(Color.WHITE);
 		logsPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(UIUtils.PRIMARY_COLOR, 2),
-				"📋 Logs", TitledBorder.LEFT, TitledBorder.TOP, UIUtils.FONT_HEADER));
+				"Nhật Ký", TitledBorder.LEFT, TitledBorder.TOP, UIUtils.FONT_HEADER));
 
-		// Status bar
 		JPanel statusPanel = new JPanel(new BorderLayout());
 		statusPanel.setBackground(new Color(245, 245, 245));
 		statusPanel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
 
-		statusLabel = new JLabel("🟢 Ready");
+		statusLabel = new JLabel("Sẵn Sàng");
 		statusLabel.setFont(UIUtils.FONT_SMALL);
 		statusLabel.setForeground(UIUtils.SUCCESS_COLOR);
 		statusLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
 
 		progressBar = new JProgressBar(0, 100);
-		progressBar.setPreferredSize(new Dimension(200, 20));
 		progressBar.setStringPainted(true);
 		progressBar.setVisible(false);
+		progressBar.setPreferredSize(new Dimension(150, 20));
 
 		statusPanel.add(statusLabel, BorderLayout.WEST);
 		statusPanel.add(progressBar, BorderLayout.EAST);
 		logsPanel.add(statusPanel, BorderLayout.NORTH);
 
-		// Log text area
 		logArea = new JTextArea();
-		logArea.setFont(new Font("Courier New", Font.PLAIN, 10));
+		logArea.setFont(new Font("Courier New", Font.PLAIN, 11));
 		logArea.setEditable(false);
 		logArea.setBackground(new Color(20, 20, 20));
 		logArea.setForeground(new Color(0, 255, 0));
-		logArea.setLineWrap(true);
-		logArea.setWrapStyleWord(true);
-		logArea.setText("➤ System initialized. Ready for crawling.\n\n");
+		logArea.setText("Hệ thống sẵn sàng. Nhấn Bắt Đầu Cào để bắt đầu.\n\n");
 
 		JScrollPane scrollPane = new JScrollPane(logArea);
 		logsPanel.add(scrollPane, BorderLayout.CENTER);
 
-		// Clear button
-		JButton clearBtn = new JButton("🗑️  Clear Logs");
-		clearBtn.setFont(UIUtils.FONT_SMALL);
-		clearBtn.setPreferredSize(new Dimension(100, 25));
-		clearBtn.addActionListener(e -> logArea.setText("➤ Logs cleared.\n\n"));
+		JButton clearBtn = UIHelper.createSmallButton("Xóa Nhật Ký", UIUtils.ERROR_COLOR);
+		clearBtn.setFocusPainted(false);
+		clearBtn.setContentAreaFilled(true);
+		clearBtn.setOpaque(true);
+		clearBtn.addActionListener(e -> {
+			logArea.setText("Nhật ký đã xóa.\n\n");
+			statusLabel.setText("Sẵn Sàng");
+			statusLabel.setForeground(UIUtils.SUCCESS_COLOR);
+		});
 
 		JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		bottomPanel.setBackground(Color.WHITE);
@@ -195,19 +195,13 @@ public class CrawlerTab {
 		return logsPanel;
 	}
 
-	private JPanel createLabeledPanel(String label) {
-		JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-		panel.setBackground(Color.WHITE);
-		JLabel lbl = new JLabel(label);
-		lbl.setFont(UIUtils.FONT_NORMAL);
-		lbl.setPreferredSize(new Dimension(100, 30));
-		panel.add(lbl);
-		return panel;
-	}
+	private void startCrawling() {
+		String platform = (String) platformCombo.getSelectedItem();
+		int days = (Integer) daysSpinner.getValue();
+		String usernames = usernamesArea.getText();
 
-	private void startCrawling(String platform, int days, String usernames, boolean autoLogin) {
 		if (usernames.trim().isEmpty()) {
-			JOptionPane.showMessageDialog(panel, "❌ Vui lòng nhập ít nhất một username!", "Error",
+			JOptionPane.showMessageDialog(panel, "Vui lòng nhập ít nhất một tên người dùng!", "Lỗi",
 					JOptionPane.ERROR_MESSAGE);
 			return;
 		}
@@ -216,81 +210,41 @@ public class CrawlerTab {
 		startBtn.setEnabled(false);
 		stopBtn.setEnabled(true);
 
-		// Run in background thread
 		new Thread(() -> {
 			try {
-				appendLog("═══════════════════════════════════════");
-				appendLog("🕷️  CRAWLING STARTED");
-				appendLog("═══════════════════════════════════════");
-				appendLog("Platform: " + platform);
-				appendLog("Days: " + days);
-				appendLog("Auto-login: " + (autoLogin ? "YES" : "NO"));
+				appendLog("==============================================");
+				appendLog("CÀO MÃ ĐÃ BẮTĐẦU");
+				appendLog("==============================================");
+				appendLog("Nền tảng: " + platform);
+				appendLog("Số ngày: " + days);
 				appendLog("");
 
 				String[] users = usernames.split("\n");
-				int totalUsers = users.length;
+				appendLog("Người dùng mục tiêu: " + users.length);
+				appendLog("");
 
-				appendLog("Processing " + totalUsers + " user(s)...\n");
+				progressBar.setVisible(true);
+				progressBar.setValue(0); // RESET TO 0 AT START
 
 				if ("Codeforces".equals(platform)) {
-					updateStatus("Opening Codeforces...", UIUtils.WARNING_COLOR);
-					CodeforcesHtmlScraper.initAndLogin();
-
-					for (int i = 0; i < users.length; i++) {
-						if (!isCrawling)
-							break;
-
-						String user = users[i].trim();
-						if (user.isEmpty())
-							continue;
-
-						updateStatus("Processing: " + user + " (" + (i + 1) + "/" + totalUsers + ")",
-								UIUtils.PRIMARY_COLOR);
-						appendLog("\n▶️  Crawling: " + user);
-
-						int crawledCount = CodeforcesApiCrawler.fetchUserSubmissions(user, days);
-
-						appendLog("✅ Completed: " + user + " | Crawled: " + crawledCount + " submissions");
-						progressBar.setValue((i + 1) * 100 / totalUsers);
-					}
-
-					CodeforcesHtmlScraper.quitDriver();
-
+					crawlCodeforces(platform, days, users);
 				} else if ("Vjudge".equals(platform)) {
-					updateStatus("Opening Vjudge...", UIUtils.WARNING_COLOR);
-					VjudgeHtmlScraper.initAndLogin();
-
-					for (int i = 0; i < users.length; i++) {
-						if (!isCrawling)
-							break;
-
-						String user = users[i].trim();
-						if (user.isEmpty())
-							continue;
-
-						updateStatus("Processing: " + user + " (" + (i + 1) + "/" + totalUsers + ")",
-								UIUtils.PRIMARY_COLOR);
-						appendLog("\n▶️  Crawling: " + user);
-
-						int crawledCount = VjudgeStatusCrawler.fetchUserSubmissions(user, days);
-
-						appendLog("✅ Completed: " + user + " | Crawled: " + crawledCount + " submissions");
-						progressBar.setValue((i + 1) * 100 / totalUsers);
-					}
-
-					VjudgeHtmlScraper.quitDriver();
+					crawlVjudge(platform, days, users);
 				}
 
 				if (isCrawling) {
-					appendLog("\n═══════════════════════════════════════");
-					appendLog("✅ CRAWLING FINISHED SUCCESSFULLY!");
-					appendLog("═══════════════════════════════════════");
-					updateStatus("✅ Completed!", UIUtils.SUCCESS_COLOR);
+					appendLog("\n==============================================");
+					appendLog("CÀO MÃ HOÀN TẤT THÀNH CÔNG!");
+					appendLog("==============================================");
+					updateStatus("Hoàn tất!", UIUtils.SUCCESS_COLOR);
+					progressBar.setValue(0); // RESET TO 0 AT END
 				}
 
 			} catch (Exception e) {
-				appendLog("\n❌ ERROR: " + e.getMessage());
-				updateStatus("❌ Error: " + e.getMessage(), UIUtils.ERROR_COLOR);
+				appendLog("\nLỖI: " + e.getMessage());
+				updateStatus("Lỗi!", UIUtils.ERROR_COLOR);
+				progressBar.setValue(0); // RESET ON ERROR
+				e.printStackTrace();
 			} finally {
 				isCrawling = false;
 				startBtn.setEnabled(true);
@@ -300,16 +254,102 @@ public class CrawlerTab {
 		}).start();
 	}
 
+	private void crawlCodeforces(String platform, int days, String[] users) {
+		updateStatus("Đang mở trình duyệt...", UIUtils.WARNING_COLOR);
+		appendLog("Đang mở trình duyệt...");
+
+		CodeforcesHtmlScraper.initAndLogin();
+
+		LoginDialog loginDialog = new LoginDialog((JFrame) SwingUtilities.getWindowAncestor(panel), platform);
+		boolean confirmed = loginDialog.waitForConfirmation();
+
+		if (!confirmed) {
+			CodeforcesHtmlScraper.quitDriver();
+			appendLog("Đã hủy cấp quyền bởi người dùng.");
+			updateStatus("Đã hủy", UIUtils.ERROR_COLOR);
+			progressBar.setValue(0); // RESET ON CANCEL
+			return;
+		}
+
+		appendLog("Cấp quyền đã xác nhận! Bắt đầu cào...\n");
+		progressBar.setValue(0); // RESET BEFORE CRAWLING
+
+		for (int i = 0; i < users.length && isCrawling; i++) {
+			String user = users[i].trim();
+			if (user.isEmpty())
+				continue;
+
+			updateStatus("Đang xử lý: " + user + " (" + (i + 1) + "/" + users.length + ")", UIUtils.PRIMARY_COLOR);
+			appendLog("Đang xử lý: " + user);
+
+			try {
+				int count = CodeforcesApiCrawler.fetchUserSubmissions(user, days);
+				appendLog("Hoàn tất: " + user + " | Tìm thấy: " + count + " bài nộp");
+			} catch (Exception e) {
+				appendLog("Lỗi cho " + user + ": " + e.getMessage());
+			}
+
+			int progress = ((i + 1) * 100) / users.length;
+			progressBar.setValue(progress);
+		}
+
+		CodeforcesHtmlScraper.quitDriver();
+		progressBar.setValue(100); // SET TO 100 WHEN DONE
+	}
+
+	private void crawlVjudge(String platform, int days, String[] users) {
+		updateStatus("Đang mở trình duyệt...", UIUtils.WARNING_COLOR);
+		appendLog("Đang mở trình duyệt...");
+
+		VjudgeHtmlScraper.initAndLogin();
+
+		LoginDialog loginDialog = new LoginDialog((JFrame) SwingUtilities.getWindowAncestor(panel), platform);
+		boolean confirmed = loginDialog.waitForConfirmation();
+
+		if (!confirmed) {
+			VjudgeHtmlScraper.quitDriver();
+			appendLog("Đã hủy cấp quyền bởi người dùng.");
+			updateStatus("Đã hủy", UIUtils.ERROR_COLOR);
+			progressBar.setValue(0); // RESET ON CANCEL
+			return;
+		}
+
+		appendLog("Cấp quyền đã xác nhận! Bắt đầu cào...\n");
+		progressBar.setValue(0); // RESET BEFORE CRAWLING
+
+		for (int i = 0; i < users.length && isCrawling; i++) {
+			String user = users[i].trim();
+			if (user.isEmpty())
+				continue;
+
+			updateStatus("Đang xử lý: " + user + " (" + (i + 1) + "/" + users.length + ")", UIUtils.PRIMARY_COLOR);
+			appendLog("Đang xử lý: " + user);
+
+			try {
+				int count = VjudgeStatusCrawler.fetchUserSubmissions(user, days);
+				appendLog("Hoàn tát: " + user + " | Tìm thấy: " + count + " bài nộp");
+			} catch (Exception e) {
+				appendLog("Lỗi cho " + user + ": " + e.getMessage());
+			}
+
+			int progress = ((i + 1) * 100) / users.length;
+			progressBar.setValue(progress);
+		}
+
+		VjudgeHtmlScraper.quitDriver();
+		progressBar.setValue(100); // SET TO 100 WHEN DONE
+	}
+
 	private void stopCrawling() {
 		isCrawling = false;
-		appendLog("\n⚠️  Crawling stopped by user.");
-		updateStatus("Stopped", UIUtils.ERROR_COLOR);
+		appendLog("\nCào mã đã bị dừng bởi người dùng.");
+		updateStatus("Đã dừng", UIUtils.ERROR_COLOR);
+		progressBar.setValue(0); // RESET ON STOP
 	}
 
 	private void appendLog(String message) {
 		SwingUtilities.invokeLater(() -> {
 			logArea.append(message + "\n");
-			// Auto-scroll to bottom
 			logArea.setCaretPosition(logArea.getDocument().getLength());
 		});
 	}

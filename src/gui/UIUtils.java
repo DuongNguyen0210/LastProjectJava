@@ -13,32 +13,30 @@ import javax.swing.SwingConstants;
 
 public class UIUtils {
 
-	// Colors
 	public static final Color PRIMARY_COLOR = new Color(25, 118, 210);
 	public static final Color SUCCESS_COLOR = new Color(76, 175, 80);
 	public static final Color WARNING_COLOR = new Color(255, 152, 0);
 	public static final Color ERROR_COLOR = new Color(244, 67, 54);
 	public static final Color LIGHT_GRAY = new Color(245, 245, 245);
 
-	// Fonts
 	public static final Font FONT_TITLE = new Font("Segoe UI", Font.BOLD, 20);
 	public static final Font FONT_HEADER = new Font("Segoe UI", Font.BOLD, 14);
 	public static final Font FONT_NORMAL = new Font("Segoe UI", Font.PLAIN, 12);
 	public static final Font FONT_SMALL = new Font("Segoe UI", Font.PLAIN, 11);
 
-	// Create styled button
 	public static JButton createButton(String text, Color bgColor) {
 		JButton btn = new JButton(text);
 		btn.setFont(FONT_NORMAL);
 		btn.setPreferredSize(new Dimension(120, 35));
 		btn.setBackground(bgColor);
 		btn.setForeground(Color.WHITE);
+		btn.setContentAreaFilled(false);
+		btn.setOpaque(true);
 		btn.setBorder(BorderFactory.createRaisedBevelBorder());
 		btn.setFocusPainted(false);
 		return btn;
 	}
 
-	// Create styled panel
 	public static JPanel createPanel(Color bgColor, int hgap, int vgap) {
 		JPanel panel = new JPanel();
 		panel.setBackground(bgColor);
@@ -48,7 +46,6 @@ public class UIUtils {
 		return panel;
 	}
 
-	// Create separator
 	public static JSeparator createSeparator() {
 		return new JSeparator(SwingConstants.HORIZONTAL);
 	}
