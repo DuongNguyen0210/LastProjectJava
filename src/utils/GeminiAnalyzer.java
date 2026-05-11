@@ -98,10 +98,28 @@ public class GeminiAnalyzer {
     }
 
     private static String buildRequestBody(String sourceCode) {
-        String prompt = "Đóng vai chuyên gia lập trình thi đấu. Phân tích đoạn code sau và TRẢ VỀ DUY NHẤT một chuỗi JSON. "
-                + "YÊU CẦU: Tất cả các giá trị (data_structure, algorithm, note) PHẢI VIẾT BẰNG TIẾNG VIỆT. "
-                + "Mẫu: {\"data_structure\":\"...\", \"algorithm\":\"...\", \"ai_generated_probability\":0, \"note\":\"...\"}. "
-                + "\n\nCode:\n" + sourceCode;
+        String prompt = "Bạn là một chuyên gia Lập trình thi đấu (Competitive Programming) kiêm chuyên gia phát hiện mã nguồn do AI sinh ra. "
+                + "Nhiệm vụ của bạn là phân tích đoạn code được cung cấp và TRẢ VỀ DUY NHẤT một chuỗi JSON hợp lệ (không chứa markdown, không có text bao quanh). "
+                + "Tất cả các giá trị chuỗi phải được viết bằng TIẾNG VIỆT.\n\n"
+                + "Định dạng JSON yêu cầu:\n"
+                + "{\n"
+                + "  \"data_structure\": \"Mô tả chi tiết các cấu trúc dữ liệu nổi bật (VD: Mảng tĩnh toàn cục, Segment Tree, Disjoint Set...)\",\n"
+                + "  \"algorithm\": \"Mô tả các thuật toán và kỹ thuật (VD: Z-function, Sweep-line, Quy hoạch động...)\",\n"
+                + "  \"ai_generated_probability\": [Một số nguyên từ 0 đến 100 thể hiện phần trăm code do AI viết], \n"
+                + "  \"note\": \"Nhận xét tổng quan và GHI RÕ LÝ DO tại sao đưa ra mức tỷ lệ AI này dựa trên bộ tiêu chí bên dưới.\"\n"
+                + "}\n\n"
+                + "TIÊU CHÍ BẮT BUỘC ĐỂ ĐÁNH GIÁ TỶ LỆ AI CHO CODE LẬP TRÌNH THI ĐẤU (RẤT QUAN TRỌNG):\n"
+                + "- Dấu hiệu CHẮC CHẮN của AI (Đánh giá 80% - 100%):\n"
+                + "  1. Có comment tiếng Việt giải thích mang tính 'sư phạm' (VD: giải thích tại sao dùng mảng tĩnh, phân tích độ phức tạp O(N), giải thích kỹ thuật Fast I/O hay 0-based index). Coder thật KHÔNG BAO GIỜ viết comment giải thích template I/O cho chính họ.\n"
+                + "  2. Code quá sạch sẽ, cấu trúc hoàn hảo, không có biến thừa hay code debug (cout << 'test').\n"
+                + "  3. Hoàn toàn thiếu vắng các Macro 'luộm thuộm' đặc trưng của dân CP (như #define ll long long, #define pb push_back, #define FOR(i,a,b), typedef vector<int> vi).\n"
+                + "  4. Đặt tên biến dài rõ nghĩa một cách bất thường trong ngữ cảnh CP (VD: current_dp, event_cnt, max_v thay vì cur, ec, mx).\n\n"
+                + "- Dấu hiệu của NGƯỜI THẬT (Đánh giá 0% - 30%):\n"
+                + "  1. Lạm dụng template Macro và Typedef dày đặc ở đầu file.\n"
+                + "  2. Gần như không có comment, hoặc comment rất ngắn/tiếng Anh bồi (VD: // lazy, // wtf, // bug here).\n"
+                + "  3. Nhồi nhét nhiều câu lệnh trên cùng một dòng, cấu trúc thiếu thẩm mỹ, ưu tiên tốc độ gõ phím.\n\n"
+                + "Mã nguồn cần phân tích:\n"
+                + sourceCode;
 
         JsonObject textPart = new JsonObject();
         textPart.addProperty("text", prompt);
