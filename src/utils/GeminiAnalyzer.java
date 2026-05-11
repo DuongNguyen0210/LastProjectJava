@@ -18,7 +18,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class GeminiAnalyzer {
-    private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=";
+	private static final String BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
     private static final int MAX_RETRIES = 3;
 
     private static final OkHttpClient CLIENT = new OkHttpClient.Builder()
@@ -40,10 +40,14 @@ public class GeminiAnalyzer {
     }
     
     public static String analyzeCode(String sourceCode) {
-        int retryCount = 0;
-        
+    	String apiKey = getApiKey();
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            return createErrorJson("Thiếu API Key trong file config.properties");
+        }
+        String fullUrl = BASE_URL + "?key=" + apiKey.trim();
+        int retryCount = 0;        
         while (retryCount <= MAX_RETRIES) {
-            String response = performApiCall(sourceCode);
+            String response = performApiCall(fullUrl, sourceCode);
             
             // Nếu kết quả không phải là lỗi hệ thống thì trả về luôn
             if (!response.contains("RETRY_NEEDED")) {
@@ -58,14 +62,12 @@ public class GeminiAnalyzer {
         return createErrorJson("Server Google không khả dụng sau " + MAX_RETRIES + " lần thử.");
     }
 
-    /**
-     * Hàm thực thi: Chỉ lo việc gửi Request và nhận Response
-     */
-    private static String performApiCall(String sourceCode) {
+    
+    private static String performApiCall(String url, String sourceCode) {
         try {
             String jsonBody = buildRequestBody(sourceCode);
             RequestBody body = RequestBody.create(jsonBody, MediaType.parse("application/json; charset=utf-8"));
-            Request request = new Request.Builder().url(API_URL).post(body).build();
+            Request request = new Request.Builder().url(url).post(body).build();
 
             try (Response response = CLIENT.newCall(request).execute()) {
                 if (response.isSuccessful()) {
