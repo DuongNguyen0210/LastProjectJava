@@ -41,7 +41,7 @@ public class UserEvaluator {
                 String jsonResponse = GeminiAnalyzer.analyzeCode(code);
                 
                 if (jsonResponse.contains("\"Error\"")) {
-                    System.out.println("-> API Google báo quá tải. Hệ thống sẽ tạm ngủ 1 phút để hồi phục...");
+                    System.out.println("Error");
                     Thread.sleep(60000); 
                     continue; 
                 }
