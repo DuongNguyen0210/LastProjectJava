@@ -28,8 +28,6 @@ import javax.swing.border.TitledBorder;
 
 import crawler.codeforces.CodeforcesApiCrawler;
 import crawler.codeforces.CodeforcesHtmlScraper;
-import crawler.vjudge.VjudgeHtmlScraper;
-import crawler.vjudge.VjudgeStatusCrawler;
 
 public class CrawlerTab {
 	private JPanel panel;
@@ -73,7 +71,7 @@ public class CrawlerTab {
 		configPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
 		JPanel platformPanel = createConfigRow("Nền Tảng:", 100);
-		String[] platforms = { "Codeforces", "Vjudge" };
+		String[] platforms = { "Codeforces" };
 		platformCombo = new JComboBox<>(platforms);
 		platformCombo.setFont(UIUtils.FONT_NORMAL);
 		platformCombo.setPreferredSize(new Dimension(150, 30));
@@ -228,8 +226,6 @@ public class CrawlerTab {
 
 				if ("Codeforces".equals(platform)) {
 					crawlCodeforces(platform, days, users);
-				} else if ("Vjudge".equals(platform)) {
-					crawlVjudge(platform, days, users);
 				}
 
 				if (isCrawling) {
@@ -294,49 +290,6 @@ public class CrawlerTab {
 		}
 
 		CodeforcesHtmlScraper.quitDriver();
-		progressBar.setValue(100); // SET TO 100 WHEN DONE
-	}
-
-	private void crawlVjudge(String platform, int days, String[] users) {
-		updateStatus("Đang mở trình duyệt...", UIUtils.WARNING_COLOR);
-		appendLog("Đang mở trình duyệt...");
-
-		VjudgeHtmlScraper.initAndLogin();
-
-		LoginDialog loginDialog = new LoginDialog((JFrame) SwingUtilities.getWindowAncestor(panel), platform);
-		boolean confirmed = loginDialog.waitForConfirmation();
-
-		if (!confirmed) {
-			VjudgeHtmlScraper.quitDriver();
-			appendLog("Đã hủy cấp quyền bởi người dùng.");
-			updateStatus("Đã hủy", UIUtils.ERROR_COLOR);
-			progressBar.setValue(0); // RESET ON CANCEL
-			return;
-		}
-
-		appendLog("Cấp quyền đã xác nhận! Bắt đầu cào...\n");
-		progressBar.setValue(0); // RESET BEFORE CRAWLING
-
-		for (int i = 0; i < users.length && isCrawling; i++) {
-			String user = users[i].trim();
-			if (user.isEmpty())
-				continue;
-
-			updateStatus("Đang xử lý: " + user + " (" + (i + 1) + "/" + users.length + ")", UIUtils.PRIMARY_COLOR);
-			appendLog("Đang xử lý: " + user);
-
-			try {
-				int count = VjudgeStatusCrawler.fetchUserSubmissions(user, days);
-				appendLog("Hoàn tát: " + user + " | Tìm thấy: " + count + " bài nộp");
-			} catch (Exception e) {
-				appendLog("Lỗi cho " + user + ": " + e.getMessage());
-			}
-
-			int progress = ((i + 1) * 100) / users.length;
-			progressBar.setValue(progress);
-		}
-
-		VjudgeHtmlScraper.quitDriver();
 		progressBar.setValue(100); // SET TO 100 WHEN DONE
 	}
 
