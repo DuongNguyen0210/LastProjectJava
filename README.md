@@ -47,3 +47,39 @@ cd /d "%~dp0"
 "C:\Program Files\Java\jdk-11\bin\java.exe" -Dfile.encoding=UTF-8 -DbotUser="taikhoan" -DbotPass="mat_khau_123" -DcrawlDays="10" -DcrawlUsers="tourist,jiangly,benq" -jar "LastProjectJava-1.0-SNAPSHOT-jar-with-dependencies.jar"
 pause
 ```
+
+## 🕒 Hướng dẫn cấu hình Task Scheduler để chạy file .bat tự động
+
+# Bước 1: Mở Task Scheduler
+Nhấn phím Windows, gõ "Task Scheduler" và nhấn Enter.
+
+# Bước 2: Tạo Task mới
+Ở cột bên phải (Actions), chọn Create Basic Task...
+
+Name: Đặt tên cho dễ nhớ (ví dụ: Auto_Crawl_Codeforces).
+
+Description: Ghi chú gì đó (ví dụ: Tự động cào data lúc 12h đêm). Nhấn Next.
+
+# Bước 3: Hẹn giờ (Trigger)
+
+Task Trigger: Chọn tần suất (thường là Daily - Hàng ngày). Nhấn Next.
+
+Start: Chọn ngày bắt đầu và thời gian cụ thể muốn tool tự chạy (ví dụ: 00:00:00).
+
+Recur every: Để là 1 days (chạy mỗi ngày). Nhấn Next.
+
+# Bước 4: Chọn hành động (Action)
+
+- Action: Chọn Start a program. Nhấn Next.
+
+- Program/script: Nhấn Browse... rồi tìm đến file run_crawler.bat.
+
+- Start in (optional): CỰC KỲ QUAN TRỌNG!
+
+- hãy copy đường dẫn thư mục chứa file .bat và dán vào đây (ví dụ: D:\Java\LastProjectJava).
+
+-  này đảm bảo khi chạy, tool sẽ tìm thấy đúng file .jar và msedgedriver.exe nằm cùng chỗ.
+
+# Bước 5: Hoàn tất
+
+Kiểm tra lại thông tin một lần nữa rồi nhấn Finish.
