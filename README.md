@@ -42,6 +42,6 @@ Hệ thống tự động cào dữ liệu bài nộp từ Codeforces, lưu tr�
 DOS
 @echo off
 cd /d "%~dp0"
-"C:\Program Files\Java\jdk-11\bin\java.exe" -Dfile.encoding=UTF-8 -DbotUser="nick_bot_cua_tao" -DbotPass="mat_khau_123" -DcrawlDays="10" -DcrawlUsers="tourist,jiangly,benq" -jar "LastProjectJava-1.0-SNAPSHOT-jar-with-dependencies.jar"
+"C:\Program Files\Java\jdk-11\bin\java.exe" -Dfile.encoding=UTF-8 -DbotUser="taikhoan" -DbotPass="mat_khau_123" -DcrawlDays="10" -DcrawlUsers="tourist,jiangly,benq" -jar "LastProjectJava-1.0-SNAPSHOT-jar-with-dependencies.jar"
 pause
 ```
