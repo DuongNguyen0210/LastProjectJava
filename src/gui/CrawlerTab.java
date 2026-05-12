@@ -13,18 +13,21 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import crawler.codeforces.CodeforcesApiCrawler;
 import crawler.codeforces.CodeforcesHtmlScraper;
@@ -39,10 +42,49 @@ public class CrawlerTab {
 	private JComboBox<String> platformCombo;
 	private JSpinner daysSpinner;
 	private JTextArea usernamesArea;
+	private JTextField botUserField;
+	private JPasswordField botPassField;
 	private volatile boolean isCrawling = false;
 
 	public CrawlerTab() {
 		createUI();
+
+		// ========================================================
+		// ĐỌC MẬT THƯ (THÔNG SỐ) TỪ FILE .BAT
+		// ========================================================
+		String botUser = System.getProperty("botUser");
+		String botPass = System.getProperty("botPass");
+		String crawlDaysStr = System.getProperty("crawlDays");
+		String crawlUsersStr = System.getProperty("crawlUsers");
+
+		if (botUser != null) {
+			botUserField.setText(botUser);
+		}
+		if (botPass != null) {
+			botPassField.setText(botPass);
+		}
+
+		if (crawlDaysStr != null) {
+			try {
+				int d = Integer.parseInt(crawlDaysStr.trim());
+				daysSpinner.setValue(d);
+			} catch (NumberFormatException ignored) {
+			}
+		}
+
+		if (crawlUsersStr != null && !crawlUsersStr.trim().isEmpty()) {
+			String formattedUsers = crawlUsersStr.replace(",", "\n").replace(";", "\n");
+			usernamesArea.setText(formattedUsers);
+		}
+
+		SwingUtilities.invokeLater(() -> {
+			checkInputFields();
+			if (startBtn != null && startBtn.isEnabled()) {
+				startBtn.doClick();
+			} else {
+				appendLog("Hệ thống phát hiện chưa đủ thông tin cài đặt tự động. Vui lòng nhập tay để tiếp tục!");
+			}
+		});
 	}
 
 	private void createUI() {
@@ -87,6 +129,22 @@ public class CrawlerTab {
 		configPanel.add(daysPanel);
 		configPanel.add(Box.createVerticalStrut(12));
 
+		JPanel userPanel = createConfigRow("Tài khoản Bot:", 100);
+		botUserField = new JTextField();
+		botUserField.setFont(UIUtils.FONT_NORMAL);
+		botUserField.setPreferredSize(new Dimension(150, 30));
+		userPanel.add(botUserField);
+		configPanel.add(userPanel);
+		configPanel.add(Box.createVerticalStrut(12));
+
+		JPanel passPanel = createConfigRow("Mật khẩu Bot:", 100);
+		botPassField = new JPasswordField();
+		botPassField.setFont(UIUtils.FONT_NORMAL);
+		botPassField.setPreferredSize(new Dimension(150, 30));
+		passPanel.add(botPassField);
+		configPanel.add(passPanel);
+		configPanel.add(Box.createVerticalStrut(12));
+
 		JLabel usernamesLabel = new JLabel("Tên Người Dùng (một dòng một nick):");
 		usernamesLabel.setFont(UIUtils.FONT_NORMAL);
 		configPanel.add(usernamesLabel);
@@ -95,6 +153,7 @@ public class CrawlerTab {
 		usernamesArea.setFont(new Font("Courier New", Font.PLAIN, 11));
 		usernamesArea.setLineWrap(true);
 		usernamesArea.setWrapStyleWord(true);
+		// Giá trị mặc định (nếu file .bat không truyền thì nó hiện cái này)
 		usernamesArea.setText("tourist\necnerwala\njiangly");
 		usernamesArea.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
 
@@ -110,6 +169,7 @@ public class CrawlerTab {
 		startBtn.setContentAreaFilled(true);
 		startBtn.setOpaque(true);
 		startBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		startBtn.setEnabled(false);
 		startBtn.addActionListener(e -> startCrawling());
 
 		stopBtn = UIHelper.createHeaderButton("Dừng", UIUtils.ERROR_COLOR);
@@ -126,9 +186,30 @@ public class CrawlerTab {
 
 		configPanel.add(Box.createVerticalGlue());
 
+		// THEO DÕI SỰ THAY ĐỔI CỦA TẤT CẢ CÁC Ô QUAN TRỌNG
+		DocumentListener fieldListener = new DocumentListener() {
+			@Override public void insertUpdate(DocumentEvent e) { checkInputFields(); }
+			@Override public void removeUpdate(DocumentEvent e) { checkInputFields(); }
+			@Override public void changedUpdate(DocumentEvent e) { checkInputFields(); }
+		};
+		botUserField.getDocument().addDocumentListener(fieldListener);
+		botPassField.getDocument().addDocumentListener(fieldListener);
+		usernamesArea.getDocument().addDocumentListener(fieldListener);
+
 		JPanel wrapper = new JPanel(new BorderLayout());
 		wrapper.add(new JScrollPane(configPanel), BorderLayout.CENTER);
 		return wrapper;
+	}
+
+	private void checkInputFields() {
+		if (startBtn == null || isCrawling) return;
+
+		String user = botUserField.getText().trim();
+		String pass = new String(botPassField.getPassword()).trim();
+		String targetUsers = usernamesArea.getText().trim();
+
+		// Điều kiện để nút SÁNG: User Bot có, Pass Bot có, và Ô danh sách người dùng cũng phải có chữ
+		startBtn.setEnabled(!user.isEmpty() && !pass.isEmpty() && !targetUsers.isEmpty());
 	}
 
 	private JPanel createConfigRow(String label, int labelWidth) {
@@ -170,7 +251,7 @@ public class CrawlerTab {
 		logArea.setEditable(false);
 		logArea.setBackground(new Color(20, 20, 20));
 		logArea.setForeground(new Color(0, 255, 0));
-		logArea.setText("Hệ thống sẵn sàng. Nhấn Bắt Đầu Cào để bắt đầu.\n\n");
+		logArea.setText("Hệ thống sẵn sàng.\n\n");
 
 		JScrollPane scrollPane = new JScrollPane(logArea);
 		logsPanel.add(scrollPane, BorderLayout.CENTER);
@@ -204,6 +285,15 @@ public class CrawlerTab {
 			return;
 		}
 
+		String botUser = botUserField.getText();
+		String botPass = new String(botPassField.getPassword());
+
+		if (botUser.trim().isEmpty() || botPass.trim().isEmpty()) {
+			JOptionPane.showMessageDialog(panel, "Vui lòng nhập thông tin tài khoản Bot!", "Lỗi",
+					JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+
 		isCrawling = true;
 		startBtn.setEnabled(false);
 		stopBtn.setEnabled(true);
@@ -211,7 +301,7 @@ public class CrawlerTab {
 		new Thread(() -> {
 			try {
 				appendLog("==============================================");
-				appendLog("CÀO MÃ ĐÃ BẮTĐẦU");
+				appendLog("CÀO MÃ ĐÃ BẮT ĐẦU");
 				appendLog("==============================================");
 				appendLog("Nền tảng: " + platform);
 				appendLog("Số ngày: " + days);
@@ -222,10 +312,10 @@ public class CrawlerTab {
 				appendLog("");
 
 				progressBar.setVisible(true);
-				progressBar.setValue(0); // RESET TO 0 AT START
+				progressBar.setValue(0);
 
 				if ("Codeforces".equals(platform)) {
-					crawlCodeforces(platform, days, users);
+					crawlCodeforces(platform, days, users, botUser, botPass);
 				}
 
 				if (isCrawling) {
@@ -233,42 +323,45 @@ public class CrawlerTab {
 					appendLog("CÀO MÃ HOÀN TẤT THÀNH CÔNG!");
 					appendLog("==============================================");
 					updateStatus("Hoàn tất!", UIUtils.SUCCESS_COLOR);
-					progressBar.setValue(0); // RESET TO 0 AT END
+					progressBar.setValue(0);
 				}
 
 			} catch (Exception e) {
 				appendLog("\nLỖI: " + e.getMessage());
 				updateStatus("Lỗi!", UIUtils.ERROR_COLOR);
-				progressBar.setValue(0); // RESET ON ERROR
+				progressBar.setValue(0);
 				e.printStackTrace();
 			} finally {
 				isCrawling = false;
-				startBtn.setEnabled(true);
+				SwingUtilities.invokeLater(() -> checkInputFields());
 				stopBtn.setEnabled(false);
 				progressBar.setVisible(false);
 			}
 		}).start();
 	}
 
-	private void crawlCodeforces(String platform, int days, String[] users) {
+	private void crawlCodeforces(String platform, int days, String[] users, String botUser, String botPass) {
 		updateStatus("Đang mở trình duyệt...", UIUtils.WARNING_COLOR);
 		appendLog("Đang mở trình duyệt...");
 
 		CodeforcesHtmlScraper.initAndLogin();
 
-		LoginDialog loginDialog = new LoginDialog((JFrame) SwingUtilities.getWindowAncestor(panel), platform);
-		boolean confirmed = loginDialog.waitForConfirmation();
+		updateStatus("Đang tự động đăng nhập...", UIUtils.WARNING_COLOR);
+		appendLog("Đang tự động đăng nhập với tài khoản: " + botUser);
 
-		if (!confirmed) {
+		boolean loginSuccess = CodeforcesHtmlScraper.autoLogin(botUser, botPass);
+
+		if (!loginSuccess) {
 			CodeforcesHtmlScraper.quitDriver();
-			appendLog("Đã hủy cấp quyền bởi người dùng.");
-			updateStatus("Đã hủy", UIUtils.ERROR_COLOR);
-			progressBar.setValue(0); // RESET ON CANCEL
+			appendLog("Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản hoặc kết nối mạng.");
+			updateStatus("Lỗi đăng nhập", UIUtils.ERROR_COLOR);
+			progressBar.setValue(0);
+			isCrawling = false;
 			return;
 		}
 
-		appendLog("Cấp quyền đã xác nhận! Bắt đầu cào...\n");
-		progressBar.setValue(0); // RESET BEFORE CRAWLING
+		appendLog("Đăng nhập tự động thành công! Bắt đầu cào...\n");
+		progressBar.setValue(0);
 
 		for (int i = 0; i < users.length && isCrawling; i++) {
 			String user = users[i].trim();
@@ -290,14 +383,14 @@ public class CrawlerTab {
 		}
 
 		CodeforcesHtmlScraper.quitDriver();
-		progressBar.setValue(100); // SET TO 100 WHEN DONE
+		progressBar.setValue(100);
 	}
 
 	private void stopCrawling() {
 		isCrawling = false;
 		appendLog("\nCào mã đã bị dừng bởi người dùng.");
 		updateStatus("Đã dừng", UIUtils.ERROR_COLOR);
-		progressBar.setValue(0); // RESET ON STOP
+		progressBar.setValue(0);
 	}
 
 	private void appendLog(String message) {

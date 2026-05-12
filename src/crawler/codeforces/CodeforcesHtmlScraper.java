@@ -3,6 +3,7 @@ package crawler.codeforces;
 import java.time.Duration;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.edge.EdgeDriver;
@@ -42,6 +43,51 @@ public class CodeforcesHtmlScraper {
 		}
 	}
 
+	public static boolean autoLogin(String username, String password) {
+		if (driver == null) {
+			System.out.println("Browser not opened!");
+			return false;
+		}
+
+		try {
+			WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+
+			// 1. Chờ cho ô nhập tài khoản xuất hiện
+			WebElement usernameInput = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("handleOrEmail")));
+
+			// 2. Dùng tổ hợp phím Ctrl + A và Delete để xóa triệt để nội dung do tính năng tự điền của trình duyệt
+			usernameInput.sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.DELETE);
+			Thread.sleep(500); // Đợi 1 chút sau khi xóa
+			usernameInput.sendKeys(username);
+
+			// 3. Tìm, xóa sạch bằng tổ hợp phím và điền mật khẩu
+			WebElement passwordInput = driver.findElement(By.id("password"));
+			passwordInput.sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.DELETE);
+			Thread.sleep(500); // Đợi 1 chút sau khi xóa
+			passwordInput.sendKeys(password);
+
+			// 4. Tìm nút "Bấm để đăng nhập" (thường là class submit hoặc value Login)
+			WebElement loginButton = driver.findElement(By.className("submit"));
+			loginButton.click();
+
+			// 5. Chờ quá trình đăng nhập hoàn tất (URL có thay đổi hoặc ẩn form)
+			wait.until(ExpectedConditions.urlContains("codeforces.com"));
+			Thread.sleep(3000);
+
+			System.out.println("Đăng nhập tự động thành công!");
+			return true;
+
+		} catch (Exception e) {
+			System.err.println("Lỗi tự động đăng nhập: " + e.getMessage());
+			// Nếu đã đăng nhập từ trước và không tìm thấy form đăng nhập (tức là đã ở trang chủ)
+			if (driver.getCurrentUrl().equals("https://codeforces.com/") || driver.getCurrentUrl().contains("codeforces.com")) {
+				System.out.println("Trình duyệt đã ghi nhớ đăng nhập từ trước!");
+				return true;
+			}
+			return false;
+		}
+	}
+
 	public static String getSourceCode(String contestId, String submitId) {
 		if (driver == null) {
 			System.out.println("Browser not opened!");
@@ -51,7 +97,8 @@ public class CodeforcesHtmlScraper {
 		String url = String.format("%s/contest/%s/submission/%s", BASE_URL, contestId, submitId);
 
 		try {
-			long delay = 2000 + (long) (Math.random() * 2000);
+			// Tăng thời gian delay ngẫu nhiên lên 5-10 giây để tránh bị ban
+			long delay = 5000 + (long) (Math.random() * 5000);
 			Thread.sleep(delay);
 
 			driver.get(url);
