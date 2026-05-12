@@ -38,6 +38,9 @@ public class CodeforcesHtmlScraper {
 			options.setExperimentalOption("debuggerAddress", "127.0.0.1:9222");
 
 			driver = new EdgeDriver(options);
+
+			// Giới hạn thời gian tải trang tối đa là 15 giây
+			driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(15));
 		} catch (Exception e) {
 			System.err.println("Error: " + e.getMessage());
 		}
@@ -55,22 +58,22 @@ public class CodeforcesHtmlScraper {
 			// 1. Chờ cho ô nhập tài khoản xuất hiện
 			WebElement usernameInput = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("handleOrEmail")));
 
-			// 2. Dùng tổ hợp phím Ctrl + A và Delete để xóa triệt để nội dung do tính năng tự điền của trình duyệt
+			// 2. Dùng tổ hợp phím Ctrl + A và Delete để xóa triệt để nội dung
 			usernameInput.sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.DELETE);
-			Thread.sleep(500); // Đợi 1 chút sau khi xóa
+			Thread.sleep(500);
 			usernameInput.sendKeys(username);
 
-			// 3. Tìm, xóa sạch bằng tổ hợp phím và điền mật khẩu
+			// 3. Tìm, xóa sạch và điền mật khẩu
 			WebElement passwordInput = driver.findElement(By.id("password"));
 			passwordInput.sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.DELETE);
-			Thread.sleep(500); // Đợi 1 chút sau khi xóa
+			Thread.sleep(500);
 			passwordInput.sendKeys(password);
 
-			// 4. Tìm nút "Bấm để đăng nhập" (thường là class submit hoặc value Login)
+			// 4. Tìm nút đăng nhập và click
 			WebElement loginButton = driver.findElement(By.className("submit"));
 			loginButton.click();
 
-			// 5. Chờ quá trình đăng nhập hoàn tất (URL có thay đổi hoặc ẩn form)
+			// 5. Chờ quá trình đăng nhập hoàn tất
 			wait.until(ExpectedConditions.urlContains("codeforces.com"));
 			Thread.sleep(3000);
 
@@ -79,7 +82,6 @@ public class CodeforcesHtmlScraper {
 
 		} catch (Exception e) {
 			System.err.println("Lỗi tự động đăng nhập: " + e.getMessage());
-			// Nếu đã đăng nhập từ trước và không tìm thấy form đăng nhập (tức là đã ở trang chủ)
 			if (driver.getCurrentUrl().equals("https://codeforces.com/") || driver.getCurrentUrl().contains("codeforces.com")) {
 				System.out.println("Trình duyệt đã ghi nhớ đăng nhập từ trước!");
 				return true;
@@ -97,11 +99,34 @@ public class CodeforcesHtmlScraper {
 		String url = String.format("%s/contest/%s/submission/%s", BASE_URL, contestId, submitId);
 
 		try {
-			// Tăng thời gian delay ngẫu nhiên lên 5-10 giây để tránh bị ban
 			long delay = 5000 + (long) (Math.random() * 5000);
 			Thread.sleep(delay);
 
-			driver.get(url);
+			// ======================================================
+			// BỘ MÁY RETRY CHỐNG KẸT TRANG (SELENIUM HANG)
+			// ======================================================
+			int maxRetries = 3;
+			boolean pageLoaded = false;
+
+			for (int attempt = 1; attempt <= maxRetries; attempt++) {
+				try {
+					System.out.println("Đang chuyển hướng đến: " + url + " (Thử lần " + attempt + ")");
+					driver.get(url);
+					pageLoaded = true;
+					break; // Tải mượt mà thì phá vòng lặp đi tiếp
+				} catch (org.openqa.selenium.TimeoutException e) {
+					System.out.println("   [!] Lần " + attempt + " load quá lâu! Đang ép dừng và thử lại...");
+					// Thần chú ngắt kết nối rác đang bị kẹt
+					((org.openqa.selenium.JavascriptExecutor) driver).executeScript("window.stop();");
+					Thread.sleep(2000); // Nghỉ 2s trước khi get lại
+				}
+			}
+
+			if (!pageLoaded) {
+				System.out.println("   [!] Thua! Đã thử " + maxRetries + " lần nhưng trang CF đang nghẽn.");
+				return null; // Bỏ bài này, nhảy sang bài khác chứ không treo app
+			}
+			// ======================================================
 
 			WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(TIMEOUT_SECONDS));
 			WebElement codeElement = wait.until(ExpectedConditions.presenceOfElementLocated(By.id(CODE_ELEMENT_ID)));
@@ -109,7 +134,7 @@ public class CodeforcesHtmlScraper {
 			return codeElement.getText();
 
 		} catch (Exception e) {
-			System.err.println("Error: " + e.getMessage());
+			System.err.println("Error khi lấy code: " + e.getMessage());
 			return null;
 		}
 	}
