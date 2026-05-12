@@ -50,17 +50,17 @@ pause
 
 ## 🕒 Hướng dẫn cấu hình Task Scheduler để chạy file .bat tự động
 
-# Bước 1: Mở Task Scheduler
+### Bước 1: Mở Task Scheduler
 Nhấn phím Windows, gõ "Task Scheduler" và nhấn Enter.
 
-# Bước 2: Tạo Task mới
+### Bước 2: Tạo Task mới
 Ở cột bên phải (Actions), chọn Create Basic Task...
 
 Name: Đặt tên cho dễ nhớ (ví dụ: Auto_Crawl_Codeforces).
 
 Description: Ghi chú gì đó (ví dụ: Tự động cào data lúc 12h đêm). Nhấn Next.
 
-# Bước 3: Hẹn giờ (Trigger)
+### Bước 3: Hẹn giờ (Trigger)
 
 Task Trigger: Chọn tần suất (thường là Daily - Hàng ngày). Nhấn Next.
 
@@ -68,12 +68,12 @@ Start: Chọn ngày bắt đầu và thời gian cụ thể muốn tool tự ch�
 
 Recur every: Để là 1 days (chạy mỗi ngày). Nhấn Next.
 
-# Bước 4: Chọn hành động (Action)
+### Bước 4: Chọn hành động (Action)
 
 - Action: Chọn Start a program. Nhấn Next.
 
 - Program/script: Nhấn Browse... rồi tìm đến file run_crawler.bat, chọn Next.
 
-# Bước 5: Hoàn tất
+### Bước 5: Hoàn tất
 
 Kiểm tra lại thông tin một lần nữa rồi nhấn Finish.
