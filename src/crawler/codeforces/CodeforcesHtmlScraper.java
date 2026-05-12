@@ -1,6 +1,5 @@
 package crawler.codeforces;
 
-import java.nio.file.Paths;
 import java.time.Duration;
 
 import org.openqa.selenium.By;
@@ -21,26 +20,23 @@ public class CodeforcesHtmlScraper {
 
 	public static void initAndLogin() {
 		try {
+			// Mở trình duyệt bằng cmd với remote debugging port
+			ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "start", "msedge.exe",
+					"--remote-debugging-port=9222",
+					"--user-data-dir=C:\\CodeforcesProfile",
+					"https://codeforces.com/enter");
+			pb.start();
+
+			// Đợi vài giây để trình duyệt kịp khởi động trước khi Selenium attach
+			Thread.sleep(3000);
+
 			System.setProperty("webdriver.edge.driver", DRIVER_PATH);
 			EdgeOptions options = new EdgeOptions();
 
-			String userDataPath = Paths
-					.get(System.getProperty("user.home"), "AppData", "Local", "Microsoft", "Edge", "User Data - Copy")
-					.toString();
-
-			options.addArguments("user-data-dir=" + userDataPath);
-			options.addArguments("profile-directory=Default");
-			options.addArguments("--no-sandbox");
-			options.addArguments("--disable-dev-shm-usage");
-			options.addArguments("--remote-debugging-port=9222");
-			options.addArguments("--disable-notifications");
-			options.setExperimentalOption("excludeSwitches", new String[] { "enable-automation" });
-			options.setExperimentalOption("useAutomationExtension", false);
+			// Kết nối Selenium vào trình duyệt đang mở thông qua debugger address
+			options.setExperimentalOption("debuggerAddress", "127.0.0.1:9222");
 
 			driver = new EdgeDriver(options);
-			driver.manage().window().maximize();
-			driver.get(BASE_URL);
-
 		} catch (Exception e) {
 			System.err.println("Error: " + e.getMessage());
 		}

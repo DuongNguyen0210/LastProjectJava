@@ -8,8 +8,8 @@ import java.util.List;
 
 public class ProfileEvaluator {
 
-	private static final double AI_HIGH_THRESHOLD = 70.0;
-	private static final double AI_MEDIUM_THRESHOLD = 30.0;
+	private static final double AI_HIGH_THRESHOLD = 75.0;
+	private static final double AI_MEDIUM_THRESHOLD = 40.0;
 
 	private static final String SQL_AVG_AI = "SELECT COUNT(s.id) as total, AVG(CAST(a.ai_generated_probability AS FLOAT)) as avg_ai "
 			+ "FROM submission s " + "JOIN target_account t ON s.account_id = t.id "

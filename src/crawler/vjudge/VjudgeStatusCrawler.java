@@ -8,14 +8,25 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.LastProjectJava;
 
 import java.time.Duration;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class VjudgeStatusCrawler {
+    
+    private static class SubmissionTask {
+        String solutionId;
+        String language;
+        long submissionTimeMs;
+
+        public SubmissionTask(String solutionId, String language, long submissionTimeMs) {
+            this.solutionId = solutionId;
+            this.language = language;
+            this.submissionTimeMs = submissionTimeMs;
+        }
+    }
+
     public static int fetchUserSubmissions(String username, int daysLimit) {
         int successfulCrawls = 0;
-        Map<String, String> submissions = new LinkedHashMap<>();
         WebDriver driver = VjudgeHtmlScraper.getDriver();
 
         if (driver == null) {
@@ -25,64 +36,63 @@ public class VjudgeStatusCrawler {
 
         String url = String.format("https://vjudge.net/status#un=%s&OJId=All&probNum=&res=1", username);
 
+        List<SubmissionTask> pendingTasks = new ArrayList<>();
+
         try {
-            System.out.println("Đang quét lịch sử nộp bài của: " + username);
             driver.get(url);
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
-            wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("table.table")));
+            wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//table[contains(@class, 'table')]//tbody//tr//a[contains(text(), '" + username + "')]")));
 
             List<WebElement> rows = driver.findElements(By.cssSelector("table.table tbody tr"));
-
             long limitTimestampMs = System.currentTimeMillis() - (daysLimit * 24L * 60 * 60 * 1000L);
 
-            for (WebElement row : rows) {
-                long submissionTimeMs = 0;
-
+            for (WebElement row : rows)
+            {
                 try {
-                    // 1. LẤY THỜI GIAN CHUẨN TỪ THUỘC TÍNH ẨN 'data-ts'
-                    WebElement dateCell = row.findElement(By.cssSelector("td.date"));
-                    submissionTimeMs = Long.parseLong(dateCell.getAttribute("data-ts"));
+                    WebElement timeDiv = row.findElement(By.cssSelector("td.date div.localizedTime"));
+                    long submissionTimeMs = Long.parseLong(timeDiv.getAttribute("data-time"));
 
-                    // Nếu thời gian bài nộp nhỏ hơn mốc giới hạn (tức là đã quá cũ) -> Dừng quét
                     if (submissionTimeMs < limitTimestampMs) {
-                        System.out.println("   -> Đã chạm mốc bài nộp cũ. Dừng quét Vjudge!");
+                        System.out.println("-> Đã chạm mốc bài nộp cũ (" + daysLimit + " ngày). Dừng quét bảng!");
                         break;
                     }
+
+                    String solutionId = row.getAttribute("id");
+                    if (solutionId == null || solutionId.isEmpty()) continue;
+
+                    String rowClass = row.getAttribute("class");
+                    if (rowClass == null || !rowClass.contains("accepted")) {
+                        continue;
+                    }
+
+                    String language = "Unknown";
+                    try {
+                        WebElement langElement = row.findElement(By.cssSelector("td.language div.view-solution"));
+                        language = langElement.getText().trim();
+                    } catch (Exception ignored) {}
+
+                    pendingTasks.add(new SubmissionTask(solutionId, language, submissionTimeMs));
+
                 } catch (Exception e) {
-                    continue; // Lỗi đọc thời gian thì bỏ qua dòng này
+                    System.out.println("Lỗi đọc DOM một dòng: " + e.getMessage());
                 }
+            }
 
-                // 2. LẤY ID BÀI NỘP
-                String solutionId = row.getAttribute("id");
-                if (solutionId == null || solutionId.isEmpty()) {
-                    continue;
-                }
+            for (SubmissionTask task : pendingTasks)
+            {
+                String code = VjudgeHtmlScraper.getSourceCode(task.solutionId);
 
-                // 3. LẤY NGÔN NGỮ
-                String language = "Unknown";
-                try {
-                    WebElement langElement = row.findElement(By.cssSelector("td.language div"));
-                    language = langElement.getAttribute("data-bs-original-title");
-                } catch (Exception ignored) {}
-
-                // 4. TẠO TIMESTAMP VÀ LƯU DATABASE LUÔN
-                java.sql.Timestamp submittedAt = new java.sql.Timestamp(submissionTimeMs);
-
-                System.out.println("Tìm thấy ID: " + solutionId + " | Ngôn ngữ: " + language);
-
-                // Gọi Scraper đi bế code về
-                String code = VjudgeHtmlScraper.getSourceCode(solutionId);
                 if (code != null && !code.isEmpty()) {
-                    System.out.println("Đã lấy được code ID: " + solutionId);
-
-                    // Bơm thẳng vào CSDL với đầy đủ 6 tham số (có submittedAt)
-                    LastProjectJava.saveSubmission(solutionId, username, "Vjudge", code, language, submittedAt);
+                    java.sql.Timestamp submittedAt = new java.sql.Timestamp(task.submissionTimeMs);
+                    LastProjectJava.saveSubmission(task.solutionId, username, "Vjudge", code, task.language, submittedAt);
                     successfulCrawls++;
+                } else {
+                    System.out.println("that bai");
                 }
             }
 
         } catch (Exception e) {
-            System.out.println("Lỗi quét bảng: " + e.getMessage());
+            System.out.println(e.getMessage());
         }
 
         return successfulCrawls;
