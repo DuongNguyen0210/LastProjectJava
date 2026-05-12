@@ -72,11 +72,7 @@ Recur every: Để là 1 days (chạy mỗi ngày). Nhấn Next.
 
 - Action: Chọn Start a program. Nhấn Next.
 
-- Program/script: Nhấn Browse... rồi tìm đến file run_crawler.bat.
-
-- Start in (optional): CỰC KỲ QUAN TRỌNG!
-+ hãy copy đường dẫn thư mục chứa file .bat và dán vào đây (ví dụ: D:\Java\LastProjectJava).
-+ việc này đảm bảo khi chạy, tool sẽ tìm thấy đúng file .jar và msedgedriver.exe nằm cùng chỗ.
+- Program/script: Nhấn Browse... rồi tìm đến file run_crawler.bat, chọn Next.
 
 # Bước 5: Hoàn tất
 
