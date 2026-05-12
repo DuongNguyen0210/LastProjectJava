@@ -25,7 +25,7 @@ Hệ thống tự động cào dữ liệu bài nộp từ Codeforces, lưu tr�
 
 ## 📖 Hướng dẫn sử dụng file .bat
 1. Cấu hình các tham số tự động 
-- Chuột phải vào file run_crawler.bat và chọn Edit. Mày sẽ thấy dòng lệnh khởi chạy có dạng các thuộc tính -D. Hãy chỉnh sửa nội dung trong ngoặc kép cho phù hợp với nhu cầu:
+- Chuột phải vào file run_crawler.bat và chọn Edit. sẽ thấy dòng lệnh khởi chạy có dạng các thuộc tính -D. Hãy chỉnh sửa nội dung trong ngoặc kép cho phù hợp với nhu cầu:
 
 - DbotUser: Nhập tên đăng nhập tài khoản dùng để cào (Codeforces).
 
@@ -36,8 +36,10 @@ Hệ thống tự động cào dữ liệu bài nộp từ Codeforces, lưu tr�
 - DcrawlUsers: Danh sách Username mục tiêu cần cào. Lưu ý: Các tên phải cách nhau bằng dấu phẩy , (Ví dụ: tourist,jiangly,benq).
 
 2. Chỉ định phiên bản Java (JDK 11+)
+
 - Nếu máy tính báo lỗi về phiên bản Java, hãy thay chữ java ở đầu lệnh bằng đường dẫn tuyệt đối đến file java.exe của JDK 11 trở lên.
-3. Ví dụ nội dung file .bat hoàn chỉnh:
+
+3. Ví dụ nội dung file `.bat` hoàn chỉnh:
 ```
 DOS
 @echo off
