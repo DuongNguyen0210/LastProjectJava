@@ -14,6 +14,8 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 public class CodeforcesHtmlScraper {
 
 	private static WebDriver driver;
+	public static volatile boolean shouldStop = false;
+
 	private static final String DRIVER_PATH = "msedgedriver.exe";
 	private static final String BASE_URL = "https://codeforces.com";
 	private static final int TIMEOUT_SECONDS = 15;
@@ -21,11 +23,8 @@ public class CodeforcesHtmlScraper {
 
 	public static void initAndLogin() {
 		try {
-			// Mở trình duyệt bằng cmd với remote debugging port
-			ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "start", "msedge.exe",
-					"--remote-debugging-port=9222",
-					"--user-data-dir=C:\\CodeforcesProfile",
-					"https://codeforces.com/enter");
+			ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "start", "msedge.exe", "--remote-debugging-port=9222",
+					"--user-data-dir=C:\\CodeforcesProfile", "https://codeforces.com/enter");
 			pb.start();
 
 			// Đợi vài giây để trình duyệt kịp khởi động trước khi Selenium attach
@@ -42,13 +41,13 @@ public class CodeforcesHtmlScraper {
 			// Giới hạn thời gian tải trang tối đa là 15 giây
 			driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(15));
 		} catch (Exception e) {
-			System.err.println("Error: " + e.getMessage());
+			System.err.println("Lỗi: " + e.getMessage());
 		}
 	}
 
 	public static boolean autoLogin(String username, String password) {
 		if (driver == null) {
-			System.out.println("Browser not opened!");
+			System.out.println("Trình duyệt chưa được mở!");
 			return false;
 		}
 
@@ -82,7 +81,8 @@ public class CodeforcesHtmlScraper {
 
 		} catch (Exception e) {
 			System.err.println("Lỗi tự động đăng nhập: " + e.getMessage());
-			if (driver.getCurrentUrl().equals("https://codeforces.com/") || driver.getCurrentUrl().contains("codeforces.com")) {
+			if (driver.getCurrentUrl().equals("https://codeforces.com/")
+					|| driver.getCurrentUrl().contains("codeforces.com")) {
 				System.out.println("Trình duyệt đã ghi nhớ đăng nhập từ trước!");
 				return true;
 			}
@@ -92,7 +92,12 @@ public class CodeforcesHtmlScraper {
 
 	public static String getSourceCode(String contestId, String submitId) {
 		if (driver == null) {
-			System.out.println("Browser not opened!");
+			System.out.println("Trình duyệt chưa được mở!");
+			return null;
+		}
+
+		if (shouldStop) {
+			System.out.println("Người dùng đã yêu cầu dừng cào mã");
 			return null;
 		}
 
@@ -102,6 +107,11 @@ public class CodeforcesHtmlScraper {
 			long delay = 5000 + (long) (Math.random() * 5000);
 			Thread.sleep(delay);
 
+			if (shouldStop) {
+				System.out.println("Dừng trước khi tải trang");
+				return null;
+			}
+
 			// ======================================================
 			// BỘ MÁY RETRY CHỐNG KẸT TRANG (SELENIUM HANG)
 			// ======================================================
@@ -109,6 +119,11 @@ public class CodeforcesHtmlScraper {
 			boolean pageLoaded = false;
 
 			for (int attempt = 1; attempt <= maxRetries; attempt++) {
+				// ✅ KIỂM TRA TRONG MỖI RETRY
+				if (shouldStop) {
+					return null;
+				}
+
 				try {
 					System.out.println("Đang chuyển hướng đến: " + url + " (Thử lần " + attempt + ")");
 					driver.get(url);
@@ -119,6 +134,11 @@ public class CodeforcesHtmlScraper {
 					// Thần chú ngắt kết nối rác đang bị kẹt
 					((org.openqa.selenium.JavascriptExecutor) driver).executeScript("window.stop();");
 					Thread.sleep(2000); // Nghỉ 2s trước khi get lại
+
+					// ✅ KIỂM TRA SAU TIMEOUT
+					if (shouldStop) {
+						return null;
+					}
 				}
 			}
 
@@ -128,13 +148,18 @@ public class CodeforcesHtmlScraper {
 			}
 			// ======================================================
 
+			// ✅ KIỂM TRA TRƯỚC KHI CHỜ ELEMENT
+			if (shouldStop) {
+				return null;
+			}
+
 			WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(TIMEOUT_SECONDS));
 			WebElement codeElement = wait.until(ExpectedConditions.presenceOfElementLocated(By.id(CODE_ELEMENT_ID)));
 
 			return codeElement.getText();
 
 		} catch (Exception e) {
-			System.err.println("Error khi lấy code: " + e.getMessage());
+			System.err.println("Lỗi khi lấy code: " + e.getMessage());
 			return null;
 		}
 	}
@@ -148,5 +173,33 @@ public class CodeforcesHtmlScraper {
 
 	public static WebDriver getDriver() {
 		return driver;
+	}
+
+	// ========== 2 METHOD MỚI (BẮT BUỘC) ==========
+
+	/**
+	 * ✅ Dừng cào bằng cách set flag + đóng trình duyệt
+	 */
+	public static void stopCrawler() {
+		shouldStop = true;
+		System.out.println("[DỪNG] Đã thiết lập cờ dừng");
+
+		if (driver != null) {
+			try {
+				// Ép dừng bất kỳ quá trình tải nào
+				((org.openqa.selenium.JavascriptExecutor) driver).executeScript("window.stop();");
+				Thread.sleep(500);
+				driver.quit();
+				driver = null;
+				System.out.println("[DỪNG] Đã đóng trình duyệt thành công");
+			} catch (Exception e) {
+				System.err.println("[DỪNG] Lỗi khi dừng: " + e.getMessage());
+			}
+		}
+	}
+
+	public static void resetStop() {
+		shouldStop = false;
+		System.out.println("[KHÔI PHỤC] Cờ dừng đã được đặt lại");
 	}
 }
