@@ -33,18 +33,15 @@ public class CodeforcesApiCrawler {
 				if (jsonObject.get("status").getAsString().equals("OK")) {
 					JsonArray results = jsonObject.getAsJsonArray("result");
 
-					// ✅ VÒNG LẶP XỬ LÝ SUBMISSIONS
 					for (JsonElement element : results) {
-						// ✅ THÊM CHECK DỨU Ở ĐẦU VÒNG LẶP
 						if (CodeforcesHtmlScraper.shouldStop) {
 							System.out.println("Dừng việc cào submissions của " + handle + " do yêu cầu người dùng");
-							break; // Thoát vòng lặp
+							break;
 						}
 
 						JsonObject submission = element.getAsJsonObject();
 						long creationTime = submission.get("creationTimeSeconds").getAsLong();
 
-						// CHUYỂN ĐỔI THỜI GIAN: API trả về giây, java.sql.Timestamp cần mili giây
 						java.sql.Timestamp submittedAt = new java.sql.Timestamp(creationTime * 1000L);
 
 						if (creationTime < limitTimestamp)
@@ -59,7 +56,6 @@ public class CodeforcesApiCrawler {
 							String sourceCode = CodeforcesHtmlScraper.getSourceCode(contestId, submitId);
 
 							if (sourceCode != null && !sourceCode.isEmpty()) {
-								// Truyền thêm biến submittedAt vào đây
 								LastProjectJava.saveSubmission(submitId, handle, "Codeforces", sourceCode, language,
 										submittedAt);
 								successfulCrawls++;
