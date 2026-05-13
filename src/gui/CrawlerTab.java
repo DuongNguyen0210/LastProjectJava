@@ -188,9 +188,20 @@ public class CrawlerTab {
 
 		// THEO DÕI SỰ THAY ĐỔI CỦA TẤT CẢ CÁC Ô QUAN TRỌNG
 		DocumentListener fieldListener = new DocumentListener() {
-			@Override public void insertUpdate(DocumentEvent e) { checkInputFields(); }
-			@Override public void removeUpdate(DocumentEvent e) { checkInputFields(); }
-			@Override public void changedUpdate(DocumentEvent e) { checkInputFields(); }
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				checkInputFields();
+			}
+
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				checkInputFields();
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				checkInputFields();
+			}
 		};
 		botUserField.getDocument().addDocumentListener(fieldListener);
 		botPassField.getDocument().addDocumentListener(fieldListener);
@@ -202,13 +213,15 @@ public class CrawlerTab {
 	}
 
 	private void checkInputFields() {
-		if (startBtn == null || isCrawling) return;
+		if (startBtn == null || isCrawling)
+			return;
 
 		String user = botUserField.getText().trim();
 		String pass = new String(botPassField.getPassword()).trim();
 		String targetUsers = usernamesArea.getText().trim();
 
-		// Điều kiện để nút SÁNG: User Bot có, Pass Bot có, và Ô danh sách người dùng cũng phải có chữ
+		// Điều kiện để nút SÁNG: User Bot có, Pass Bot có, và Ô danh sách người dùng
+		// cũng phải có chữ
 		startBtn.setEnabled(!user.isEmpty() && !pass.isEmpty() && !targetUsers.isEmpty());
 	}
 
@@ -294,6 +307,8 @@ public class CrawlerTab {
 			return;
 		}
 
+		CodeforcesHtmlScraper.resetStop();
+
 		isCrawling = true;
 		startBtn.setEnabled(false);
 		stopBtn.setEnabled(true);
@@ -364,6 +379,12 @@ public class CrawlerTab {
 		progressBar.setValue(0);
 
 		for (int i = 0; i < users.length && isCrawling; i++) {
+
+			if (!isCrawling) {
+				appendLog("Crawling stopped");
+				break;
+			}
+
 			String user = users[i].trim();
 			if (user.isEmpty())
 				continue;
@@ -388,6 +409,7 @@ public class CrawlerTab {
 
 	private void stopCrawling() {
 		isCrawling = false;
+		CodeforcesHtmlScraper.stopCrawler();
 		appendLog("\nCào mã đã bị dừng bởi người dùng.");
 		updateStatus("Đã dừng", UIUtils.ERROR_COLOR);
 		progressBar.setValue(0);
